@@ -1,4 +1,8 @@
+#ifndef _MULTIDIMENTIONAL_POINT_H_
+#define _MULTIDIMENTIONAL_POINT_H_
+
 #pragma once
+
 #include <cstdio>
 #include <array>
 #include <vector>
@@ -6,6 +10,8 @@
 #include <ostream>
 #include <iomanip>
 #include <initializer_list>
+
+namespace dixelu {
 
 template<size_t dims>
 struct point {
@@ -23,22 +29,22 @@ struct point {
 			pt[i] = P.pt[i];
 	}
 	point(const std::initializer_list<double>& il_d) {
-		std::initializer_list<double>::iterator y = il_d.begin();
+		auto y = il_d.begin();
 		for (size_t i = 0; i < dims && y != il_d.end(); i++, y++)
 			pt[i] = *y;
 	}
 	point(const std::initializer_list<int>& il) {
-		std::initializer_list<int>::iterator y = il.begin();
+		auto y = il.begin();
 		for (size_t i = 0; i < dims && y != il.end(); i++, y++)
 			pt[i] = *y;
 	}
 	point(const std::vector<double>& il_d) {
-		std::vector<double>::const_iterator y = il_d.cbegin();
+		auto y = il_d.cbegin();
 		for (size_t i = 0; i < dims && y != il_d.end(); i++, y++)
 			pt[i] = *y;
 	}
 	point(const std::vector<int>& il) {
-		std::vector<int>::const_iterator y = il.cbegin();
+		auto y = il.cbegin();
 		for (size_t i = 0; i < dims && y != il.end(); i++, y++)
 			pt[i] = *y;
 	}
@@ -277,19 +283,19 @@ struct sq_matrix {
 		return P;
 	}
 	inline sq_matrix<dims> inverse() const {
-		double max = 0, mul = 0;
+		double max_value = 0, mul = 0;
 		size_t id = 0;
 		sq_matrix<dims> E(1), A(*this);
 		for (size_t step = 0; step < dims; step++) {
 			id = step;
-			max = 0;
+			max_value = 0;
 			for (size_t coid = step; coid < dims; coid++) {
-				if (std::abs(max) < std::abs(A.at(coid, step))) {
-					max = A.at(coid, step);
+				if (std::abs(max_value) < std::abs(A.at(coid, step))) {
+					max_value = A.at(coid, step);
 					id = coid;
 				}
 			}
-			if (std::abs(max) <= DOUBLE_EPSILON)
+			if (std::abs(max_value) <= DOUBLE_EPSILON)
 				return sq_matrix<dims>();
 			if (id != step) {
 				std::swap(A[id], A[step]);
@@ -310,19 +316,19 @@ struct sq_matrix {
 	}
 	inline double determinant() const {
 		double determ = 1;
-		double temp = 0, max = 0, mul = 0;
+		double temp = 0, max_value = 0, mul = 0;
 		size_t id = 0;
 		sq_matrix<dims> A(*this);
 		for (size_t step = 0; step < dims; step++) {
 			id = step;
-			max = 0;
+			max_value = 0;
 			for (size_t coid = step; coid < dims; coid++) {
-				if (std::abs(max) < std::abs(A.at(coid, step))) {
-					max = A.at(coid, step);
+				if (std::abs(max_value) < std::abs(A.at(coid, step))) {
+					max_value = A.at(coid, step);
 					id = coid;
 				}
 			}
-			if (std::abs(max) <= DOUBLE_EPSILON)
+			if (std::abs(max_value) <= DOUBLE_EPSILON)
 				return 0;
 			if (id != step)
 				std::swap(A[id], A[step]);
@@ -339,18 +345,18 @@ struct sq_matrix {
 		return determ;
 	}
 	inline static point<dims> solve_using_eulers_method(sq_matrix<dims> A, point<dims> P) {
-		double max = 0, mul = 0;
+		double max_value = 0, mul = 0;
 		size_t id = 0;
 		for (size_t step = 0; step < dims; step++) {
 			id = step;
-			max = 0;
+			max_value = 0;
 			for (size_t coid = step; coid < dims; coid++) {
-				if (std::abs(max) < std::abs(A.at(coid, step))) {
-					max = A.at(coid, step);
+				if (std::abs(max_value) < std::abs(A.at(coid, step))) {
+					max_value = A.at(coid, step);
 					id = coid;
 				}
 			}
-			if (std::abs(max) <= DOUBLE_EPSILON)
+			if (std::abs(max_value) <= DOUBLE_EPSILON)
 				return point<dims>();
 			if (id != step) {
 				std::swap(A[id], A[step]);
@@ -377,20 +383,20 @@ struct sq_matrix {
 		}
 		else if (!degree)
 			return sq_matrix<dims>(1.);
-		auto curMatrix = sq_matrix<dims>(1.), degCoMatrix = *this;
+		auto cur_matrix = sq_matrix<dims>(1.), deg_co_matrix = *this;
 		while (degree) {
 			switch (degree & 1) {
 			case 1:
-				curMatrix = curMatrix * degCoMatrix;
-				degCoMatrix = degCoMatrix * degCoMatrix;
+				cur_matrix = cur_matrix * deg_co_matrix;
+				deg_co_matrix = deg_co_matrix * deg_co_matrix;
 				break;
 			case 0:
-				degCoMatrix = degCoMatrix * degCoMatrix;
+				deg_co_matrix = deg_co_matrix * deg_co_matrix;
 				break;
 			}
 			degree >>= 1;
 		}
-		return inverse ? curMatrix.inverse() : curMatrix;
+		return inverse ? cur_matrix.inverse() : cur_matrix;
 	}
 	inline sq_matrix<dims - 1> minor_matrix(const size_t& x_minor, const size_t& y_minor) const {
 		auto minor_index = [](size_t x, size_t y, size_t minor_x, size_t minor_y) -> std::pair<int64_t, int64_t> {
@@ -449,3 +455,6 @@ inline std::ostream& operator<<(std::ostream& in, const sq_matrix<dims>& M) {
 	return in;
 }
 
+} // namespace dixelu
+
+#endif

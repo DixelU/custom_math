@@ -1,23 +1,25 @@
 #pragma once
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef _MATRIX_H_
+#define _MATRIX_H_
 
-#include <Windows.h>
 #include <functional>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <iomanip>
 #include <utility>
 #include <vector>
 #include <string>
-#include <queue>
 #include <cmath>
-#include <map>
 
-using line = std::vector<double>;
-constexpr double EPSILON = 1.0e-10; //difference epsilon.
+namespace dixelu {
+
+	namespace {
+
+		using line = std::vector<double>;
+		constexpr double EPSILON = 1.0e-10; //difference epsilon.
+
+	}
 
 class matrix {
 public:
@@ -77,7 +79,7 @@ public:
 	inline matrix inverse() const;
 	inline double determinant() const;
 	inline matrix resolve_ole(matrix point) const;
-	
+
 	friend inline std::ostream& operator<<(std::ostream& out, const matrix& rightMatrix);
 	friend inline std::istream& operator>>(std::istream& in, matrix& rightMatrix);
 	friend inline matrix operator*(double a, const matrix& rightMatrix);
@@ -229,7 +231,7 @@ inline matrix matrix::operator+=(const matrix& rightMatrix) {
 		}
 	}
 	return (*this);
-} 
+}
 
 inline matrix matrix::operator-=(const matrix& rightMatrix) {
 	for (size_t y = 0; y < rows(); y++) {
@@ -316,19 +318,19 @@ inline double matrix::trace() const {
 inline double matrix::determinant() const {//gauss
 	if (rows() != cols())
 		return 0;
-	double multiplier = 1, max = 0;
+	double multiplier = 1, maxValue = 0;
 	matrix thisMatrix(*this);
 	size_t maxID = 0;
 	for (size_t curColumn = 0; curColumn < rows(); curColumn++) {
 		maxID = curColumn;
-		max = 0;
+		maxValue = 0;
 		for (size_t curRow = maxID; curRow < rows(); curRow++) {
-			if (abs(thisMatrix[curRow][curColumn]) > max) {
-				max = abs(thisMatrix[curRow][curColumn]);
+			if ((std::abs)(thisMatrix[curRow][curColumn]) > maxValue) {
+				maxValue = (std::abs)(thisMatrix[curRow][curColumn]);
 				maxID = curRow;
 			}
 		}
-		if (abs(thisMatrix[maxID][curColumn]) >= EPSILON)
+		if ((std::abs)(thisMatrix[maxID][curColumn]) >= EPSILON)
 			thisMatrix[maxID].swap(thisMatrix[curColumn]);
 		else
 			return 0;
@@ -352,26 +354,26 @@ inline matrix matrix::inverse() const {
 	matrix thisMatrix(*this);
 	matrix finalMatrix;
 	finalMatrix.resize(rows(), cols());
-	double max = 0;
+	double maxValue = 0;
 	thisMatrix.resize(rows(), cols() * 2);
 	for (size_t i = 0; i < cols(); i++)
 		thisMatrix[i][i + cols()] = 1;
 	size_t maxID = 0;
 	for (size_t curColumn = 0; curColumn < rows(); curColumn++) {
-		max = 0;
+		maxValue = 0;
 		maxID = curColumn;
 		for (size_t curRow = maxID; curRow < rows(); curRow++) {
-			if (abs(thisMatrix[curRow][curColumn]) > max) {
-				max = abs(thisMatrix[curRow][curColumn]);
+			if ((std::abs)(thisMatrix[curRow][curColumn]) > maxValue) {
+				maxValue = (std::abs)(thisMatrix[curRow][curColumn]);
 				maxID = curRow;
 			}
 		}
-		if (abs(thisMatrix[maxID][curColumn]) >= EPSILON)
+		if ((std::abs)(thisMatrix[maxID][curColumn]) >= EPSILON)
 			thisMatrix[maxID].swap(thisMatrix[curColumn]);
 		else
 			return matrix(rows(), rows());
 		for (size_t curRow = 0; curRow < rows(); curRow++) {
-			if (curRow == curColumn || abs(thisMatrix[curRow][curColumn]) < EPSILON)
+			if (curRow == curColumn || (std::abs)(thisMatrix[curRow][curColumn]) < EPSILON)
 				continue;
 			//std::cout << M << '\n';
 			double rowMultiplier = -1 * (thisMatrix[curRow][curColumn] / thisMatrix[curColumn][curColumn]);
@@ -388,8 +390,8 @@ inline matrix matrix::inverse() const {
 	}
 	for (size_t y = 0; y < rows(); y++) {
 		for (size_t x = 0; x < cols(); x++) {
-			if (abs(thisMatrix[y][x + rows()]) < EPSILON)
-				thisMatrix[y][x + rows()] = abs(thisMatrix[y][x + rows()]);
+			if ((std::abs)(thisMatrix[y][x + rows()]) < EPSILON)
+				thisMatrix[y][x + rows()] = (std::abs)(thisMatrix[y][x + rows()]);
 			finalMatrix[y][x] = thisMatrix[y][x + rows()];
 		}
 	}
@@ -397,20 +399,20 @@ inline matrix matrix::inverse() const {
 }
 
 inline matrix matrix::resolve_ole(matrix point) const {
-	double multiplier = 1, max = 0;
+	double multiplier = 1, maxValue = 0;
 	matrix thisMatrix(*this);
-	matrix final(cols(), 1);
-	size_t maxID = 0; 
-	for (size_t curColumn = 0; curColumn < std::min(cols(),rows()); curColumn++) {
+	matrix answer(cols(), 1);
+	size_t maxID = 0;
+	for (size_t curColumn = 0; curColumn < (std::min)(cols(), rows()); curColumn++) {
 		maxID = curColumn;
-		max = 0;
+		maxValue = 0;
 		for (size_t curRow = maxID; curRow < rows(); curRow++) {
-			if (abs(thisMatrix[curRow][curColumn]) > max) {
-				max = abs(thisMatrix[curRow][curColumn]);
+			if ((std::abs)(thisMatrix[curRow][curColumn]) > maxValue) {
+				maxValue = (std::abs)(thisMatrix[curRow][curColumn]);
 				maxID = curRow;
 			}
 		}
-		if (abs(thisMatrix[maxID][curColumn]) >= EPSILON){
+		if ((std::abs)(thisMatrix[maxID][curColumn]) >= EPSILON) {
 			point[maxID].swap(point[curColumn]);
 			thisMatrix[maxID].swap(thisMatrix[curColumn]);
 		}
@@ -427,13 +429,17 @@ inline matrix matrix::resolve_ole(matrix point) const {
 			}
 		}
 	}
-	for (size_t i = 0; i < std::max(cols(),rows()); i++){
-		double value_at = thisMatrix.at(i,i);
-		if(i < cols() && abs(value_at) > EPSILON)
-			std::cerr << "Unresolveable OLE: 0X = " << value_at << std::endl;
-		final.at(0,i) = value_at;
+	for (size_t i = 0; i < (std::max)(cols(), rows()); i++) {
+		double point_val = point.at(0, i);
+		double value_at = thisMatrix.at(i, i);
+		if (i >= cols() && ((std::abs)(point_val) > EPSILON))
+			std::cerr << "Unresolveable OLE: 0X = " << point_val << std::endl;
+		else if ((std::abs)(value_at) > EPSILON) {
+			point_val /= value_at;
+			answer.at(0, i) = point_val;
+		}
 	}
-	return final;
+	return answer;
 }
 
 inline matrix matrix::minor_matrix(const size_t& x_minor, const size_t& y_minor) const {
@@ -474,7 +480,7 @@ inline matrix matrix::cross_prod(const matrix& points_in_matrix) {
 		mx.resize(dims + 1, dims + 1);
 		for (size_t i = dims; i >= 1; i--)
 			mx[i] = mx[i - 1];
-		for (size_t i = 0; i < dims+1; i++)
+		for (size_t i = 0; i < dims + 1; i++)
 			answer.at(i, 0) = (mx.minor_matrix(i, 0).determinant() * ((i & 1) ? (1.) : (-1.)));
 		return answer;
 	}
@@ -588,7 +594,7 @@ inline matrix matrix::pabs() const {
 inline matrix matrix::selfpabs() {
 	for (auto& line : _matrix)
 		for (auto& val : line)
-			val = std::abs(val);
+			val = (std::abs)(val);
 	return *this;
 }
 
@@ -634,8 +640,10 @@ inline double matrix::norma(double p) const {
 	double sum = 0;
 	for (auto& line : _matrix)
 		for (auto& val : line)
-			sum += std::pow(std::abs(val),p);
+			sum += std::pow((std::abs)(val), p);
 	return std::pow(sum, 1. / p);
 }
+
+} // namespace dixelu
 
 #endif 
