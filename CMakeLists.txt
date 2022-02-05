@@ -1,4 +1,8 @@
+cmake_minimum_required(VERSION 3.12)
 
 project(custom_matrix_types)
 
-add_executable(test1 ${CMAKE_SOURCE_DIR}/Tests/1.cpp)
+#set(test_list "Tests/constexpr_basic_test.cpp" )
+
+#add_executable(tests ${test_list})
+#target_compile_features(tests PUBLIC cxx_std_17)
