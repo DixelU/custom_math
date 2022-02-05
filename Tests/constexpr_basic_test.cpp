@@ -4,7 +4,7 @@
 
 #include "../sq_matrix.h"
 
-constexpr std::pair<float, float> some_function()
+__MDP_CONDITIONAL_SPECIFIERS std::pair<float, float> some_function()
 {
 	dixelu::sq_matrix<float, 3> sq;
 	sq[2][2] = 2;
@@ -33,9 +33,14 @@ int main()
 
 	std::cout << " Got " << t << " in " << std::chrono::duration_cast<std::chrono::microseconds>(e - b).count() << " microsec (nonconstexpr)" << std::endl;
 
-	constexpr auto pair = some_function();
-	constexpr auto asdf_const = dixelu::utils::constexpr_pow<double>(1.05498, 3215.2165);
+	b = std::chrono::high_resolution_clock::now();
+	__MDP_COND_CONSTEXPR auto pair = some_function();
+	__MDP_COND_CONSTEXPR auto asdf_const = dixelu::utils::constexpr_pow<double>(1.05498, 3215.2165);
+	e = std::chrono::high_resolution_clock::now();
 
 	std::cout << pair.first << " " << pair.second << " ~ " << asdf_const << std::endl;
+    
+    std::cout << "Proof of constant evauation:" << std::chrono::duration_cast<std::chrono::microseconds>(e - b).count() << " microseconds between chrono::now calls" << std::endl;
+    
 	return 0; // :)
 }

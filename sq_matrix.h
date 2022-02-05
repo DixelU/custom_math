@@ -1,4 +1,3 @@
-
 #ifndef _MULTIDIMENTIONAL_POINT_H_
 #define _MULTIDIMENTIONAL_POINT_H_
 
@@ -51,10 +50,10 @@ namespace dixelu
 			template<typename T, unsigned int n>
 			struct lookup_table
 			{
-				static __MDP_COND_CONSTEXPR unsigned int max_degree = T(std::numeric_limits<T>::max_exponent / n);
+				static const __MDP_COND_CONSTEXPR unsigned int max_degree = T(std::numeric_limits<T>::max_exponent / n);
 				T lookup_table_vals[max_degree]{};
 				T lookup_table_roots[max_degree]{};
-				__MDP_COND_CONSTEXPR lookup_table():
+				__MDP_COND_CONSTEXPR lookup_table() :
 					lookup_table_vals(), lookup_table_roots()
 				{
 					__MDP_COND_CONSTEXPR T base(2);
@@ -86,8 +85,7 @@ namespace dixelu
 					else
 						guessed_end = center;
 
-				} 
-				while (guessed_end - guessed_begin > 1);
+				} while (guessed_end - guessed_begin > 1);
 				return table.lookup_table_roots[guessed_end];
 			}
 
@@ -111,11 +109,10 @@ namespace dixelu
 					x_k_nm1 = one / __uintpow(x_k, n - 1);
 					x_p_prev_k = x_prev_k;
 					x_prev_k = x_k;
-					x_k = coef* x_k + (x / n_conv) * x_k_nm1;
+					x_k = coef * x_k + (x / n_conv) * x_k_nm1;
 					diff = constexpr_abs(x_k - x_prev_k);
-					diff_step = constexpr_abs(x_k - x_p_prev_k); 
-				} 
-				while (diff > epsilon && diff_step > epsilon);
+					diff_step = constexpr_abs(x_k - x_p_prev_k);
+				} while (diff > epsilon && diff_step > epsilon);
 				return x_k;
 			}
 
@@ -125,8 +122,8 @@ namespace dixelu
 			template<typename T>
 			__MDP_CONDITIONAL_SPECIFIERS T __frac_positive_pow(T x, T p)
 			{
-				__MDP_COND_CONSTEXPR unsigned int rolling_ppow_bits = 4u;
-				__MDP_COND_CONSTEXPR unsigned int rolling_power = ((1u << rolling_ppow_bits));
+				constexpr unsigned int rolling_ppow_bits = 4u;
+				constexpr unsigned int rolling_power = ((1u << rolling_ppow_bits));
 				__MDP_COND_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
 				if (p <= epsilon)
 					return T(1);
@@ -387,7 +384,7 @@ namespace dixelu
 	template<typename general_float_type, size_t dims>
 	struct sq_matrix
 	{
-		static __MDP_COND_CONSTEXPR general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
+		static constexpr general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
 		general_float_type utilisation = general_float_type();
 
 		using point_type = point<general_float_type, dims>;
