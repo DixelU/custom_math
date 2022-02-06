@@ -117,6 +117,7 @@ namespace dixelu
 				T coef(n_conv - 1);
 				coef /= n_conv;
 				T diff(0), diff_step(0);
+				T last_diff_multiplier = one;
 				do
 				{
 					x_k_nm1 = one / __uintpow(x_k, n - 1);
@@ -125,7 +126,9 @@ namespace dixelu
 					x_k = coef * x_k + (x / n_conv) * x_k_nm1;
 					diff = constexpr_abs(x_k - x_prev_k);
 					diff_step = constexpr_abs(x_k - x_p_prev_k);
-				} while (diff > epsilon && diff_step > epsilon);
+					last_diff_multiplier = (x_k > one) ? x_prev_k : one;
+				} 
+				while (diff > epsilon * last_diff_multiplier && diff_step > epsilon * last_diff_multiplier);
 				return x_k;
 			}
 
