@@ -12,7 +12,9 @@ __MDP_CONDITIONAL_SPECIFIERS std::pair<float, float> some_function()
 	sq[1][0] = 1;
 	sq[0][0] = 3;
 	sq ^= -3;
-	auto n = sq[0].get_norm(1.f / 3);
+	sq.transpose();
+	auto sq5 = sq.to<5>();
+	auto n = sq5[0].get_norm(1.f / 3);
 	return { sq.determinant(), n };
 }
 
