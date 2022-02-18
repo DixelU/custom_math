@@ -57,13 +57,13 @@ namespace dixelu
 			template<typename T>
 			__MDP_CONDITIONAL_SPECIFIERS T __uintpow(T x, std::size_t n)
 			{
-				return n == 0 ? 1 : __sqr(__uintpow(x, n >> 1)) * (n & 1 ? x : T(1));
+				return n == 0 ? 1 : __sqr(__uintpow(x, n >> 1))* (n & 1 ? x : T(1));
 			}
 
 			template<typename T, unsigned int n>
 			struct lookup_table
 			{
-				static __MDP_COND_CONSTEXPR unsigned int max_degree = T(std::numeric_limits<T>::max_exponent / n);
+				static constexpr unsigned int max_degree = T(std::numeric_limits<T>::max_exponent / n);
 				T lookup_table_vals[max_degree]{};
 				T lookup_table_roots[max_degree]{};
 				__MDP_COND_CONSTEXPR lookup_table() :
@@ -127,8 +127,7 @@ namespace dixelu
 					diff = constexpr_abs(x_k - x_prev_k);
 					diff_step = constexpr_abs(x_k - x_p_prev_k);
 					last_diff_multiplier = (x_k > one) ? x_prev_k : one;
-				} 
-				while (diff > epsilon * last_diff_multiplier && diff_step > epsilon * last_diff_multiplier);
+				} while (diff > epsilon* last_diff_multiplier&& diff_step > epsilon* last_diff_multiplier);
 				return x_k;
 			}
 
@@ -138,8 +137,8 @@ namespace dixelu
 			template<typename T>
 			__MDP_CONDITIONAL_SPECIFIERS T __frac_positive_pow(T x, T p)
 			{
-				__MDP_COND_CONSTEXPR unsigned int rolling_ppow_bits = 4u;
-				__MDP_COND_CONSTEXPR unsigned int rolling_power = ((1u << rolling_ppow_bits));
+				constexpr unsigned int rolling_ppow_bits = 4u;
+				constexpr unsigned int rolling_power = ((1u << rolling_ppow_bits));
 				__MDP_COND_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
 				if (p <= epsilon)
 					return T(1);
@@ -400,7 +399,7 @@ namespace dixelu
 	template<typename general_float_type, size_t dims>
 	struct sq_matrix
 	{
-		static __MDP_COND_CONSTEXPR general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
+		static constexpr general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
 		general_float_type utilisation = general_float_type();
 
 		using point_type = point<general_float_type, dims>;
@@ -489,7 +488,7 @@ namespace dixelu
 		}
 		__MDP_CONDITIONAL_SPECIFIERS self_type operator-=(const self_type& p)
 		{
-			for (int i = 0; i < dims; i++) 
+			for (int i = 0; i < dims; i++)
 				base_array[i] -= p[i];
 			return *this;
 		}
@@ -503,7 +502,7 @@ namespace dixelu
 		}
 		__MDP_CONDITIONAL_SPECIFIERS general_float_type& at(size_t point_id, size_t coordinate)
 		{
-			if (point_id < dims && coordinate < dims) 
+			if (point_id < dims && coordinate < dims)
 			{
 				return base_array[point_id][coordinate];
 			}
@@ -511,7 +510,7 @@ namespace dixelu
 		}
 		__MDP_CONDITIONAL_SPECIFIERS const general_float_type& at(size_t point_id, size_t coordinate) const
 		{
-			if (point_id < dims && coordinate < dims) 
+			if (point_id < dims && coordinate < dims)
 			{
 				return base_array[point_id][coordinate];
 			}
@@ -703,7 +702,7 @@ namespace dixelu
 		}
 
 		template<size_t new_dims>
-		__MDP_CONDITIONAL_SPECIFIERS sq_matrix<general_float_type, new_dims> 
+		__MDP_CONDITIONAL_SPECIFIERS sq_matrix<general_float_type, new_dims>
 			to(size_t start_index = 0)
 		{
 			sq_matrix<general_float_type, new_dims> new_matrix;
@@ -722,20 +721,20 @@ namespace dixelu
 
 		__MDP_CONDITIONAL_SPECIFIERS self_type transpose()
 		{
-			for (size_t y = 0; y < dims; y++) 
-				for (size_t x = 0; x < dims; x++) 
+			for (size_t y = 0; y < dims; y++)
+				for (size_t x = 0; x < dims; x++)
 				{
 					auto t = base_array[y][x];
 					base_array[y][x] = base_array[x][y];
 					base_array[x][y] = t;
-				}	
+				}
 			return *this;
 		}
 
 		__MDP_CONDITIONAL_SPECIFIERS general_float_type trace() const
 		{
 			general_float_type sum(0);
-			for (size_t i = 0; i < dims; i++) 
+			for (size_t i = 0; i < dims; i++)
 				sum += base_array[i][i];
 			return sum;
 		}
@@ -747,7 +746,7 @@ namespace dixelu
 			return mx;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type selfppow(double p) 
+		__MDP_CONDITIONAL_SPECIFIERS self_type selfppow(double p)
 		{
 			for (size_t y = 0; y < dims; ++y)
 				for (size_t x = 0; x < dims; ++x)
@@ -755,14 +754,14 @@ namespace dixelu
 			return *this;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type pabs() const 
+		__MDP_CONDITIONAL_SPECIFIERS self_type pabs() const
 		{
 			self_type mx(*this);
 			mx.selfpabs();
 			return mx;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type selfpabs() 
+		__MDP_CONDITIONAL_SPECIFIERS self_type selfpabs()
 		{
 			for (size_t y = 0; y < dims; ++y)
 				for (size_t x = 0; x < dims; ++x)
@@ -770,7 +769,7 @@ namespace dixelu
 			return *this;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS general_float_type psum() const 
+		__MDP_CONDITIONAL_SPECIFIERS general_float_type psum() const
 		{
 			general_float_type s = general_float_type(0);
 			for (size_t y = 0; y < dims; ++y)
@@ -779,7 +778,7 @@ namespace dixelu
 			return s;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type selfapply(const std::function<void(general_float_type&)>& func) 
+		__MDP_CONDITIONAL_SPECIFIERS self_type selfapply(const std::function<void(general_float_type&)>& func)
 		{
 			for (size_t y = 0; y < dims; ++y)
 				for (size_t x = 0; x < dims; ++x)
@@ -787,14 +786,14 @@ namespace dixelu
 			return *this;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type apply(const std::function<void(general_float_type&)>& func) const 
+		__MDP_CONDITIONAL_SPECIFIERS self_type apply(const std::function<void(general_float_type&)>& func) const
 		{
 			self_type mx(*this);
 			mx.selfapply(func);
 			return mx;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type selfapply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func) 
+		__MDP_CONDITIONAL_SPECIFIERS self_type selfapply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func)
 		{
 			for (size_t y = 0; y < dims; y++)
 				for (size_t x = 0; x < dims; x++)
@@ -802,7 +801,7 @@ namespace dixelu
 			return *this;
 		}
 
-		__MDP_CONDITIONAL_SPECIFIERS self_type apply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func) const 
+		__MDP_CONDITIONAL_SPECIFIERS self_type apply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func) const
 		{
 			self_type mx(*this);
 			mx.selfapply_indexed(func);
