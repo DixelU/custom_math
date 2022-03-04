@@ -72,6 +72,7 @@ public:
 	inline self_type apply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func) const;
 	inline self_type& selfapply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func);
 	inline void call_indexed(const std::function<void(general_float_type, size_t, size_t)>& func) const;
+	inline void call(const std::function<void(general_float_type)>& func) const;
 	inline general_float_type psum() const;
 	inline self_type pabs() const;
 	inline self_type& selfpabs();
@@ -94,6 +95,8 @@ public:
 
 	inline bool operator<(const self_type& comparation_m) const;
 	inline bool operator<=(const self_type& comparation_m) const;
+
+	inline std::pair<general_float_type, general_float_type> minmax() const;
 private:
 	std::vector<line> _matrix;
 	general_float_type utilization = 0;
@@ -678,6 +681,13 @@ inline void matrix<general_float_type>::call_indexed(const std::function<void(ge
 }
 
 template<typename general_float_type>
+inline void matrix<general_float_type>::call(const std::function<void(general_float_type)>& func) const {
+	for (auto& line : _matrix)
+		for (auto& val : line)
+			func(val);
+}
+
+template<typename general_float_type>
 inline matrix<general_float_type> matrix<general_float_type>::apply(const std::function<void(general_float_type&)>& func) const {
 	self_type mx(*this);
 	mx.selfapply(func);
@@ -713,6 +723,25 @@ inline general_float_type matrix<general_float_type>::norma(general_float_type p
 		for (auto& val : line)
 			sum += std::pow((std::abs)(val), p);
 	return std::pow(sum, 1. / p);
+}
+
+template<typename general_float_type>
+inline std::pair<general_float_type, general_float_type> matrix<general_float_type>::minmax() const
+{
+	general_float_type min = std::numeric_limits<general_float_type>::max();
+	general_float_type max = std::numeric_limits<general_float_type>::min();
+	
+	call([&min, &max](general_float_type v) {
+		if (!std::isfinite(v))
+			return;
+		min = (std::min)(v, min);
+		max = (std::max)(v, max);
+	});
+
+	if(min > max)
+		throw std::runtime_error("matrix::minmax min > max");
+
+	return {min, max};
 }
 
 } // namespace dixelu
