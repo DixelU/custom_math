@@ -48,124 +48,124 @@ namespace dixelu
 
 		namespace details
 		{
-            
-            template<typename T, bool is_int>
-            struct __try_unsigned {};
 
-            template<typename T>
-            struct __try_unsigned<T, true>
-            {
-                using type = typename std::make_unsigned<T>::type;
-            };
+			template<typename T, bool is_int>
+			struct __try_unsigned {};
 
-            template<typename T>
-            struct __try_unsigned<T, false>
-            {
-                using type = T;
-            };
+			template<typename T>
+			struct __try_unsigned<T, true>
+			{
+				using type = typename std::make_unsigned<T>::type;
+			};
 
-            template<typename T>
-            struct try_unsigned
-            {
-                using type = typename
-                    __try_unsigned<T, std::numeric_limits<T>::is_integer>::type;
-            };
+			template<typename T>
+			struct __try_unsigned<T, false>
+			{
+				using type = T;
+			};
+
+			template<typename T>
+			struct try_unsigned
+			{
+				using type = typename
+					__try_unsigned<T, std::numeric_limits<T>::is_integer>::type;
+			};
 
 
-            template<typename T, bool is_int>
-            struct __try_signed {};
+			template<typename T, bool is_int>
+			struct __try_signed {};
 
-            template<typename T>
-            struct __try_signed<T, true>
-            {
-                using type = typename std::make_signed<T>::type;
-            };
+			template<typename T>
+			struct __try_signed<T, true>
+			{
+				using type = typename std::make_signed<T>::type;
+			};
 
-            template<typename T>
-            struct __try_signed<T, false>
-            {
-                using type = T;
-            };
+			template<typename T>
+			struct __try_signed<T, false>
+			{
+				using type = T;
+			};
 
-            template<typename T>
-            struct try_signed
-            {
-                using type = typename
-                    __try_signed<T, std::numeric_limits<T>::is_integer>::type;
-            };
+			template<typename T>
+			struct try_signed
+			{
+				using type = typename
+					__try_signed<T, std::numeric_limits<T>::is_integer>::type;
+			};
 
-            template<typename T, bool is_signed>
-            struct __opposite_sign_type {};
+			template<typename T, bool is_signed>
+			struct __opposite_sign_type {};
 
-            template<typename T>
-            struct __opposite_sign_type<T, true>
-            {
-                using type = typename
-                    __try_unsigned<T, std::numeric_limits<T>::is_integer>::type;
-            };
+			template<typename T>
+			struct __opposite_sign_type<T, true>
+			{
+				using type = typename
+					__try_unsigned<T, std::numeric_limits<T>::is_integer>::type;
+			};
 
-            template<typename T>
-            struct __opposite_sign_type<T, false>
-            {
-                using type = typename
-                    __try_signed<T, std::numeric_limits<T>::is_integer>::type;
-            };
+			template<typename T>
+			struct __opposite_sign_type<T, false>
+			{
+				using type = typename
+					__try_signed<T, std::numeric_limits<T>::is_integer>::type;
+			};
 
-            template<typename T>
-            struct opposite_sign_type
-            {
-                using type = typename
-                    __opposite_sign_type<T, std::is_signed<T>::value>::type;
-            };
+			template<typename T>
+			struct opposite_sign_type
+			{
+				using type = typename
+					__opposite_sign_type<T, std::is_signed<T>::value>::type;
+			};
 
 
 #ifndef WITHOUT_CONSTEXPR_FUNCTIONS
-            template<typename T>
-            __DIXELU_CONDITIONAL_SPECIFIERS T __safe_mul(T x, T y) 
-            {
-                if(std::numeric_limits<T>::is_integer)
-                {
-                    using uT = typename try_unsigned<T>::type;
-                    bool xlz = x < 0;
-                    bool ylz = y < 0;
-                    uT xabs(x);
-                    uT yabs(y);
-                    return (xlz == ylz)?T(xabs * yabs):-T(xabs * yabs);
-                }
-                else
-                {
-                    return x * y;
-                }
-            }
+			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __safe_mul(T x, T y)
+			{
+				if (std::numeric_limits<T>::is_integer)
+				{
+					using uT = typename try_unsigned<T>::type;
+					bool xlz = x < 0;
+					bool ylz = y < 0;
+					uT xabs(x);
+					uT yabs(y);
+					return (xlz == ylz) ? T(xabs * yabs) : -T(xabs * yabs);
+				}
+				else
+				{
+					return x * y;
+				}
+			}
 
 			template<typename T>
 			__DIXELU_CONDITIONAL_SPECIFIERS T __sqr(T x)
-            {
-                if(std::numeric_limits<T>::is_integer)
-                {
-                    using uT = typename try_unsigned<T>::type;
-                    auto xabs = uT(constexpr_abs<T>(x));
-                    return T(xabs * xabs);
-                }
-                else
-                {
-                    return x * x;
-                }
+			{
+				if (std::numeric_limits<T>::is_integer)
+				{
+					using uT = typename try_unsigned<T>::type;
+					auto xabs = uT(constexpr_abs<T>(x));
+					return T(xabs * xabs);
+				}
+				else
+				{
+					return x * x;
+				}
 			}
 
 			template<typename T>
 			__DIXELU_CONDITIONAL_SPECIFIERS T __uintpow(T x, std::size_t n)
 			{
-				return n == 0 ? 1 : __safe_mul(__sqr(__uintpow(x, n >> 1)) , (n & 1 ? x : T(1)));
+				return n == 0 ? 1 : __safe_mul(__sqr(__uintpow(x, n >> 1)), (n & 1 ? x : T(1)));
 			}
 
 			template<typename T, unsigned int n>
 			struct lookup_table
 			{
-                static constexpr unsigned int radix = (std::numeric_limits<T>::radix)?std::numeric_limits<T>::radix:2;
+				static constexpr unsigned int radix = (std::numeric_limits<T>::radix) ? std::numeric_limits<T>::radix : 2;
 				static constexpr unsigned int max_degree_flt = (std::numeric_limits<T>::max_exponent / n);
-                static constexpr unsigned int max_degree_int = ((std::numeric_limits<T>::digits / n));
-                static constexpr unsigned int max_degree = (!max_degree_flt)?max_degree_int:max_degree_flt;
+				static constexpr unsigned int max_degree_int = ((std::numeric_limits<T>::digits / n));
+				static constexpr unsigned int max_degree = (!max_degree_flt) ? max_degree_int : max_degree_flt;
 				T lookup_table_vals[max_degree]{};
 				T lookup_table_roots[max_degree]{};
 				__DIXELU_COND_CONSTEXPR lookup_table() :
@@ -314,8 +314,8 @@ namespace dixelu
 	struct point
 	{
 		general_float_type base_array[dims];
-        using general_paired_ftype = typename 
-            utils::details::opposite_sign_type<general_float_type>::type;
+		using general_paired_ftype = typename
+			utils::details::opposite_sign_type<general_float_type>::type;
 		using self_type = point<general_float_type, dims>;
 		__DIXELU_COND_CONSTEXPR point() :
 			base_array()
@@ -796,7 +796,7 @@ namespace dixelu
 		}
 		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator^=(int degree)
 		{
-			return ((*this) = (*this) ^ degree), *this;
+			return ((*this) = (*this) ^ degree), * this;
 		}
 		__DIXELU_CONDITIONAL_SPECIFIERS sq_matrix<general_float_type, dims - 1>
 			minor_matrix(const std::size_t& x_minor, const std::size_t& y_minor) const
