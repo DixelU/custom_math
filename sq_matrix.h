@@ -14,13 +14,13 @@
 
 #define __DEFAULT_DIXELU_FUNC_SPECIFIERS inline
 
-#if (__cplusplus >= 201402L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
-#define __DIXELU_COND_CONSTEXPR constexpr
+#if (defined(__cpp_constexpr) && __cpp_constexpr >= 201304L)
+#define __DIXELU_RELAXED_CONSTEXPR constexpr
 #else
-#define __DIXELU_COND_CONSTEXPR
+#define __DIXELU_RELAXED_CONSTEXPR
 #endif
 
-#define __DIXELU_CONDITIONAL_SPECIFIERS __DEFAULT_DIXELU_FUNC_SPECIFIERS __DIXELU_COND_CONSTEXPR
+#define __DIXELU_CONDITIONAL_SPECIFIERS __DEFAULT_DIXELU_FUNC_SPECIFIERS __DIXELU_RELAXED_CONSTEXPR
 
 namespace dixelu
 {
@@ -168,11 +168,11 @@ namespace dixelu
 				static constexpr unsigned int max_degree = (!max_degree_flt) ? max_degree_int : max_degree_flt;
 				T lookup_table_vals[max_degree]{};
 				T lookup_table_roots[max_degree]{};
-				__DIXELU_COND_CONSTEXPR lookup_table() :
+				__DIXELU_RELAXED_CONSTEXPR lookup_table() :
 					lookup_table_vals(), lookup_table_roots()
 				{
-					__DIXELU_COND_CONSTEXPR T base(radix);
-					__DIXELU_COND_CONSTEXPR T zero(0);
+					__DIXELU_RELAXED_CONSTEXPR T base(radix);
+					__DIXELU_RELAXED_CONSTEXPR T zero(0);
 					T root = base;
 					lookup_table_vals[0] = zero;
 					lookup_table_roots[0] = zero;
@@ -188,7 +188,7 @@ namespace dixelu
 			template<typename T, unsigned int n>
 			__DIXELU_CONDITIONAL_SPECIFIERS T root_approx(T x)
 			{
-				__DIXELU_COND_CONSTEXPR lookup_table<T, n> table{};
+				__DIXELU_RELAXED_CONSTEXPR lookup_table<T, n> table{};
 				unsigned int guessed_begin = 0;
 				unsigned int guessed_end = lookup_table<T, n>::max_degree - 1;
 				do
@@ -206,7 +206,7 @@ namespace dixelu
 			template<typename T, std::size_t n>
 			__DIXELU_CONDITIONAL_SPECIFIERS T __uintroot(T x)
 			{
-				__DIXELU_COND_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
+				__DIXELU_RELAXED_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
 				if (x <= epsilon)
 					return T(0);
 				T n_conv(n);
@@ -240,7 +240,7 @@ namespace dixelu
 			{
 				constexpr unsigned int rolling_ppow_bits = 4u;
 				constexpr unsigned int rolling_power = ((1u << rolling_ppow_bits));
-				__DIXELU_COND_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
+				__DIXELU_RELAXED_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
 				if (p <= epsilon)
 					return T(1);
 				if (p >= T(1))
@@ -317,40 +317,40 @@ namespace dixelu
 		using general_paired_ftype = typename
 			utils::details::opposite_sign_type<general_float_type>::type;
 		using self_type = point<general_float_type, dims>;
-		__DIXELU_COND_CONSTEXPR point() :
+		__DIXELU_RELAXED_CONSTEXPR point() :
 			base_array()
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = general_float_type();
 		}
-		__DIXELU_COND_CONSTEXPR explicit point(general_float_type v) :
+		__DIXELU_RELAXED_CONSTEXPR explicit point(general_float_type v) :
 			base_array()
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = v;
 		}
-		__DIXELU_COND_CONSTEXPR point(const std::initializer_list<general_paired_ftype>& il_d) :
+		__DIXELU_RELAXED_CONSTEXPR point(const std::initializer_list<general_paired_ftype>& il_d) :
 			base_array()
 		{
 			auto y = il_d.begin();
 			for (std::size_t i = 0; i < dims && y != il_d.end(); ++i, ++y)
 				base_array[i] = *y;
 		}
-		__DIXELU_COND_CONSTEXPR point(const std::initializer_list<int>& il) :
+		__DIXELU_RELAXED_CONSTEXPR point(const std::initializer_list<int>& il) :
 			base_array()
 		{
 			auto y = il.begin();
 			for (std::size_t i = 0; i < dims && y != il.end(); ++i, ++y)
 				base_array[i] = *y;
 		}
-		__DIXELU_COND_CONSTEXPR point(const std::vector<general_paired_ftype>& il_d) :
+		__DIXELU_RELAXED_CONSTEXPR point(const std::vector<general_paired_ftype>& il_d) :
 			base_array()
 		{
 			auto y = il_d.cbegin();
 			for (std::size_t i = 0; i < dims && y != il_d.end(); ++i, ++y)
 				base_array[i] = *y;
 		}
-		__DIXELU_COND_CONSTEXPR point(const std::vector<int>& il) :
+		__DIXELU_RELAXED_CONSTEXPR point(const std::vector<int>& il) :
 			base_array()
 		{
 			auto y = il.cbegin();
@@ -535,13 +535,13 @@ namespace dixelu
 
 		point_type base_array[dims];
 
-		__DIXELU_COND_CONSTEXPR sq_matrix() :
+		__DIXELU_RELAXED_CONSTEXPR sq_matrix() :
 			base_array()
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = point_type();
 		}
-		__DIXELU_COND_CONSTEXPR explicit sq_matrix(general_float_type E_num) :
+		__DIXELU_RELAXED_CONSTEXPR explicit sq_matrix(general_float_type E_num) :
 			base_array()
 		{
 			for (std::size_t i = 0; i < dims; ++i)
@@ -550,7 +550,7 @@ namespace dixelu
 				base_array[i][i] = E_num;
 			}
 		}
-		__DIXELU_COND_CONSTEXPR sq_matrix(std::initializer_list<point_type> IL) :
+		__DIXELU_RELAXED_CONSTEXPR sq_matrix(std::initializer_list<point_type> IL) :
 			base_array()
 		{
 			std::size_t id = 0;
