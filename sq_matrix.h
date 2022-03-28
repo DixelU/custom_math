@@ -118,7 +118,6 @@ namespace dixelu
 					__opposite_sign_type<T, std::is_signed<T>::value>::type;
 			};
 
-
 #ifndef WITHOUT_CONSTEXPR_FUNCTIONS
 			template<typename T>
 			__DIXELU_CONDITIONAL_SPECIFIERS T __safe_mul(T x, T y)
@@ -314,8 +313,8 @@ namespace dixelu
 	struct point
 	{
 		general_float_type base_array[dims];
-		using general_paired_ftype = typename
-			utils::details::opposite_sign_type<general_float_type>::type;
+		using general_inttype = std::conditional<
+			std::is_same<general_float_type, int>::value, long long int, int>;
 		using self_type = point<general_float_type, dims>;
 		__DIXELU_RELAXED_CONSTEXPR point() :
 			base_array()
@@ -329,7 +328,7 @@ namespace dixelu
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = v;
 		}
-		__DIXELU_RELAXED_CONSTEXPR point(const std::initializer_list<general_paired_ftype>& il_d) :
+		__DIXELU_RELAXED_CONSTEXPR point(const std::initializer_list<general_inttype>& il_d) :
 			base_array()
 		{
 			auto y = il_d.begin();
@@ -343,7 +342,7 @@ namespace dixelu
 			for (std::size_t i = 0; i < dims && y != il.end(); ++i, ++y)
 				base_array[i] = *y;
 		}
-		__DIXELU_RELAXED_CONSTEXPR point(const std::vector<general_paired_ftype>& il_d) :
+		__DIXELU_RELAXED_CONSTEXPR point(const std::vector<general_inttype>& il_d) :
 			base_array()
 		{
 			auto y = il_d.cbegin();
@@ -528,10 +527,12 @@ namespace dixelu
 	struct sq_matrix
 	{
 		static constexpr general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
+		static constexpr std::size_t minor_type_size = (dims > 1) ? dims - 1 : 1;
 		general_float_type utilisation = general_float_type();
 
 		using point_type = point<general_float_type, dims>;
 		using self_type = sq_matrix<general_float_type, dims>;
+		using minor_type = sq_matrix<general_float_type, minor_type_size>;
 
 		point_type base_array[dims];
 
@@ -798,7 +799,7 @@ namespace dixelu
 		{
 			return ((*this) = (*this) ^ degree), * this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS sq_matrix<general_float_type, dims - 1>
+		__DIXELU_CONDITIONAL_SPECIFIERS minor_type
 			minor_matrix(const std::size_t& x_minor, const std::size_t& y_minor) const
 		{
 			auto minor_index = [](std::size_t x, std::size_t y, std::size_t minor_x, std::size_t minor_y) ->
@@ -814,7 +815,7 @@ namespace dixelu
 					y -= 1;
 				return { x, y };
 			};
-			sq_matrix<general_float_type, dims - 1> M;
+			minor_type M;
 			for (std::size_t y = 0; y < dims; ++y)
 			{
 				for (std::size_t x = 0; x < dims; ++x)
@@ -940,7 +941,8 @@ namespace dixelu
 
 	template<typename general_float_type, std::size_t dims>
 	__DIXELU_CONDITIONAL_SPECIFIERS point<general_float_type, dims>
-		cross_prod(const std::array<point<general_float_type, dims>, dims - 1>& points)
+		cross_prod(const std::array<point<general_float_type, dims>, 
+		sq_matrix<general_float_type, dims>::minor_type_size>& points)
 	{
 		if (dims > 1)
 		{
