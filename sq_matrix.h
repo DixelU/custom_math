@@ -14,7 +14,7 @@
 
 #define __DEFAULT_DIXELU_FUNC_SPECIFIERS inline
 
-#if (defined(__cpp_constexpr) && __cpp_constexpr >= 201304L)
+#if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
 #define __DIXELU_RELAXED_CONSTEXPR constexpr
 #else
 #define __DIXELU_RELAXED_CONSTEXPR
@@ -320,7 +320,7 @@ namespace dixelu
 			base_array()
 		{
 			for (std::size_t i = 0; i < dims; ++i)
-				base_array[i] = general_float_type();
+				base_array[i] = general_float_type(0);
 		}
 		__DIXELU_RELAXED_CONSTEXPR explicit point(general_float_type v) :
 			base_array()
@@ -355,6 +355,12 @@ namespace dixelu
 			auto y = il.cbegin();
 			for (std::size_t i = 0; i < dims && y != il.end(); ++i, ++y)
 				base_array[i] = *y;
+		}
+		__DIXELU_RELAXED_CONSTEXPR point(const general_float_type(&starr)[dims]) :
+			base_array()
+		{
+			for (std::size_t i = 0; i < dims; ++i)
+				base_array[i] = starr[i];
 		}
 		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type get_norm2() const
 		{
@@ -551,6 +557,12 @@ namespace dixelu
 				base_array[i][i] = E_num;
 			}
 		}
+		__DIXELU_RELAXED_CONSTEXPR sq_matrix(const point_type(&matrix)[dims]) :
+			base_array()
+		{
+			for (std::size_t i = 0; i < dims; ++i)
+				base_array[i] = matrix[i];
+		}
 		__DIXELU_RELAXED_CONSTEXPR sq_matrix(std::initializer_list<point_type> IL) :
 			base_array()
 		{
@@ -648,10 +660,14 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator*(const self_type& M) const
 		{
 			self_type P;
-			for (std::size_t y = 0; y < dims; ++y) {
-				for (std::size_t x = 0; x < dims; ++x) {
-					for (std::size_t i = 0; i < dims; ++i) {
-						P[y][x] += base_array[y][i] * M[i][x];
+			for (std::size_t x = 0; x < dims; ++x) 
+			{
+				for (std::size_t y = 0; y < dims; ++y) 
+				{
+					P.base_array[y][x] = general_float_type(0);
+					for (std::size_t i = 0; i < dims; ++i)
+					{
+						P.base_array[y][x] += base_array[y][i] * M[i][x];
 					}
 				}
 			}
