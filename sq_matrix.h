@@ -16,8 +16,10 @@
 
 #if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
 #define __DIXELU_RELAXED_CONSTEXPR constexpr
+#define __DIXELU_RELAXED_STATIC_OR_CONSTEXPR __DIXELU_RELAXED_CONSTEXPR
 #else
 #define __DIXELU_RELAXED_CONSTEXPR
+#define __DIXELU_RELAXED_STATIC_OR_CONSTEXPR static
 #endif
 
 #define __DIXELU_CONDITIONAL_SPECIFIERS __DEFAULT_DIXELU_FUNC_SPECIFIERS __DIXELU_RELAXED_CONSTEXPR
@@ -158,6 +160,12 @@ namespace dixelu
 				return n == 0 ? 1 : __safe_mul(__sqr(__uintpow(x, n >> 1)), (n & 1 ? x : T(1)));
 			}
 
+			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __intpow(T x, std::ptrdiff_t n)
+			{
+				return (n < 0) ? T(1) / __uintpow(x, -n): __uintpow(x, n);
+			}
+
 			template<typename T, unsigned int n>
 			struct lookup_table
 			{
@@ -187,7 +195,7 @@ namespace dixelu
 			template<typename T, unsigned int n>
 			__DIXELU_CONDITIONAL_SPECIFIERS T root_approx(T x)
 			{
-				__DIXELU_RELAXED_CONSTEXPR lookup_table<T, n> table{};
+				__DIXELU_RELAXED_STATIC_OR_CONSTEXPR lookup_table<T, n> table{};
 				unsigned int guessed_begin = 0;
 				unsigned int guessed_end = lookup_table<T, n>::max_degree - 1;
 				do
@@ -206,7 +214,7 @@ namespace dixelu
 			__DIXELU_CONDITIONAL_SPECIFIERS T __uintroot(T x)
 			{
 				__DIXELU_RELAXED_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
-				if (x <= epsilon)
+				if (x == T(0))
 					return T(0);
 				T n_conv(n);
 				T one(1);
@@ -248,6 +256,80 @@ namespace dixelu
 			}
 
 			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __arctanh_naive(T x)
+			{
+				T xsq = x * x;
+				T xdeg = x;
+				T sum = x;
+				T rec = 1;
+				T prev_sum = 0;
+				while(prev_sum != sum)
+				{
+					prev_sum = sum;
+					xdeg *= xsq;
+					rec += T(2);
+					sum += xdeg / rec;
+				}
+				return sum;
+			}
+
+			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __log_e_naive(T x)
+			{
+				x -= T(1);
+				return 2 * __arctanh_naive(x / (2 + x));
+			}
+
+			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __log(T x)
+			{
+				constexpr unsigned int rolling_ppow_bits = 4u;
+				constexpr unsigned int rolling_power = ((1u << rolling_ppow_bits));
+				constexpr T log_top_edge = T(2);
+				constexpr T log_bottom_edge = T(1)/log_top_edge;
+				if(x == T(0))
+					return -std::numeric_limits<T>::infinity();
+				
+				T multiplier = T(1);
+				while(x > log_top_edge || x < log_bottom_edge)
+				{
+					multiplier *= rolling_power;
+					x = __uintroot<T, rolling_power>(x);
+				}
+				return multiplier * __log_e_naive(x);
+			}
+
+			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __exp_naive(T x = 1)
+			{
+				T sum(1);
+				T prev_sum(0);
+				T fact(1);
+				T xdeg(x);
+				std::size_t iter(1);
+				while(prev_sum != sum)
+				{
+					prev_sum = sum;
+					sum += xdeg / fact;
+					xdeg *= x;
+					++iter;
+					fact *= iter;
+				}
+				return sum;
+			}
+
+			template<typename T>
+			__DIXELU_CONDITIONAL_SPECIFIERS T __exp(T x)
+			{
+				__DIXELU_RELAXED_CONSTEXPR T __e = __exp_naive<T>();
+				const std::ptrdiff_t x_z = x;
+				const T dx = x - x_z;
+				const auto e_x_z = __intpow(__e, x_z);
+				const auto e_dx = __exp_naive(dx);
+				return e_x_z * e_dx;
+			}
+
+			template<typename T>
 			__DIXELU_CONDITIONAL_SPECIFIERS T __positive_pow(T x, T p)
 			{
 				std::size_t p_w(p);
@@ -258,13 +340,22 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __pow(T a, T b)
+			__DIXELU_CONDITIONAL_SPECIFIERS T __pow_sqroot(T a, T b)
 			{
 				if (b < 0)
 					return T(1) / __positive_pow(a, -b);
 				return __positive_pow(a, b);
 			}
 
+			template<typename T> 
+			__DIXELU_CONDITIONAL_SPECIFIERS T __pow_explog(T a, T b)
+			{
+				if(b == T(0))
+					return T(1);
+				if(a == T(0))
+					return T(0);
+				return __exp(b * __log(a));
+			}
 #endif
 		} // namespace details
 
@@ -284,7 +375,7 @@ namespace dixelu
 #ifdef WITHOUT_CONSTEXPR_FUNCTIONS
 			return std::pow(a, b);
 #else
-			return details::__pow(a, b);
+			return details::__pow_explog(a, b);
 #endif // WITHOUT_CONSTEXPR_FUNCTIONS
 		}
 
@@ -310,7 +401,7 @@ namespace dixelu
 	} // namespace utils
 
 	template<typename general_float_type, std::size_t dims>
-	struct point
+	struct point 
 	{
 		general_float_type base_array[dims];
 		using general_inttype = std::conditional<
@@ -361,6 +452,12 @@ namespace dixelu
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = starr[i];
+		}
+		__DIXELU_RELAXED_CONSTEXPR point(const self_type& pt) :
+			base_array()
+		{
+			for (std::size_t i = 0; i < dims; ++i)
+				base_array[i] = pt[i];
 		}
 		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type get_norm2() const
 		{
@@ -548,6 +645,12 @@ namespace dixelu
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = point_type();
 		}
+		__DIXELU_RELAXED_CONSTEXPR sq_matrix(const self_type& mx) :
+			base_array()
+		{
+			for (std::size_t i = 0; i < dims; ++i)
+				base_array[i] = mx[i];
+		}
 		__DIXELU_RELAXED_CONSTEXPR explicit sq_matrix(general_float_type E_num) :
 			base_array()
 		{
@@ -667,7 +770,7 @@ namespace dixelu
 					P.base_array[y][x] = general_float_type(0);
 					for (std::size_t i = 0; i < dims; ++i)
 					{
-						P.base_array[y][x] += base_array[y][i] * M[i][x];
+						P[y][x] += base_array[y][i] * M[i][x];
 					}
 				}
 			}
