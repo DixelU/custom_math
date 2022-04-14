@@ -2,31 +2,37 @@
 #define _DIXELU_MATH_UTILS_H_
 
 #if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
+#ifndef __DIXELU_RELAXED_CONSTEXPR
 #define __DIXELU_RELAXED_CONSTEXPR constexpr
+#endif
 #else
+#ifndef __DIXELU_RELAXED_CONSTEXPR
 #define __DIXELU_RELAXED_CONSTEXPR
 #endif
+#endif
 
-#define __DIXELU_CONDITIONAL_SPECIFIERS inline __DIXELU_RELAXED_CONSTEXPR
+#ifndef __DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+#define __DIXELU_CONDITIONAL_CPP14_SPECIFIERS inline __DIXELU_RELAXED_CONSTEXPR
+#endif
 
 namespace dixelu
 {
 	namespace utils
 	{
 		template<typename T>
-		__DIXELU_CONDITIONAL_SPECIFIERS T constexpr_abs(const T& value)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T constexpr_abs(const T& value)
 		{
 			return value < T(0) ? -value : value;
 		}
 
 		template<typename T>
-		__DIXELU_CONDITIONAL_SPECIFIERS const T& constexpr_min(const T& m1, const T& m2)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS const T& constexpr_min(const T& m1, const T& m2)
 		{
 			return m1 < m2 ? m1 : m2;
 		}
 
 		template<typename T>
-		__DIXELU_CONDITIONAL_SPECIFIERS const T& constexpr_max(const T& m1, const T& m2)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS const T& constexpr_max(const T& m1, const T& m2)
 		{
 			return m2 < m1 ? m1 : m2;
 		}
@@ -105,7 +111,7 @@ namespace dixelu
 
 #ifndef WITHOUT_CONSTEXPR_FUNCTIONS
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __safe_mul(T x, T y)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __safe_mul(T x, T y)
 			{
 				if (std::numeric_limits<T>::is_integer)
 				{
@@ -123,7 +129,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __sqr(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __sqr(T x)
 			{
 				if (std::numeric_limits<T>::is_integer)
 				{
@@ -138,13 +144,13 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __uintpow(T x, std::size_t n)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintpow(T x, std::size_t n)
 			{
 				return n == 0 ? T(1) : __safe_mul(__sqr(__uintpow(x, n >> 1)), (n & 1 ? x : T(1)));
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __intpow(T x, std::ptrdiff_t n)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __intpow(T x, std::ptrdiff_t n)
 			{
 				return (n < 0) ? T(1) / __uintpow(x, -n) : __uintpow(x, n);
 			}
@@ -176,7 +182,7 @@ namespace dixelu
 			};
 
 			template<typename T, unsigned int n>
-			__DIXELU_CONDITIONAL_SPECIFIERS T root_approx(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T root_approx(T x)
 			{
 				static __DIXELU_RELAXED_CONSTEXPR lookup_table<T, n> table{};
 				unsigned int guessed_begin = 0;
@@ -194,7 +200,7 @@ namespace dixelu
 			}
 
 			template<typename T, std::size_t n>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __uintroot(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintroot(T x)
 			{
 				__DIXELU_RELAXED_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
 				if (x == T(0))
@@ -223,10 +229,10 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __positive_pow(T x, T p);
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __positive_pow(T x, T p);
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __frac_positive_pow(T x, T p)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __frac_positive_pow(T x, T p)
 			{
 				constexpr unsigned int rolling_ppow_bits = 4u;
 				constexpr unsigned int rolling_power = ((1u << rolling_ppow_bits));
@@ -239,7 +245,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __arctanh_naive(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __arctanh_naive(T x)
 			{
 				T xsq = x * x;
 				T xdeg = x;
@@ -257,14 +263,14 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __log_e_naive(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __log_e_naive(T x)
 			{
 				x -= T(1);
 				return 2 * __arctanh_naive(x / (2 + x));
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __log(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __log(T x)
 			{
 				constexpr unsigned int rolling_ppow_bits = 4u;
 				constexpr unsigned int rolling_power = ((1u << rolling_ppow_bits));
@@ -283,7 +289,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __exp_naive(T x = 1)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __exp_naive(T x = 1)
 			{
 				T sum(1);
 				T prev_sum(0);
@@ -302,7 +308,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __exp(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __exp(T x)
 			{
 				__DIXELU_RELAXED_CONSTEXPR T __e = __exp_naive<T>();
 				const std::ptrdiff_t x_z = x;
@@ -313,7 +319,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __positive_pow(T x, T p)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __positive_pow(T x, T p)
 			{
 				std::size_t p_w(p);
 				auto d_p = p - T(p_w);
@@ -323,7 +329,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __pow_sqroot(T a, T b)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __pow_sqroot(T a, T b)
 			{
 				if (b < 0)
 					return T(1) / __positive_pow(a, -b);
@@ -331,7 +337,7 @@ namespace dixelu
 			}
 
 			template<typename T>
-			__DIXELU_CONDITIONAL_SPECIFIERS T __pow_explog(T a, T b)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __pow_explog(T a, T b)
 			{
 				return __exp(b * __log(a));
 			}
@@ -339,7 +345,7 @@ namespace dixelu
 		} // namespace details
 
 		template<typename T>
-		__DIXELU_CONDITIONAL_SPECIFIERS T constexpr_sqrt(T x)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T constexpr_sqrt(T x)
 		{
 #ifdef WITHOUT_CONSTEXPR_FUNCTIONS
 			return std::sqrt(x);
@@ -349,7 +355,7 @@ namespace dixelu
 		}
 
 		template<typename T>
-		__DIXELU_CONDITIONAL_SPECIFIERS T constexpr_pow(T a, T b)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T constexpr_pow(T a, T b)
 		{
 #ifdef WITHOUT_CONSTEXPR_FUNCTIONS
 			return std::pow(a, b);
@@ -359,7 +365,7 @@ namespace dixelu
 		}
 
 		template<typename T>
-		__DIXELU_CONDITIONAL_SPECIFIERS T constexpr_intpow(T a, std::ptrdiff_t b)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T constexpr_intpow(T a, std::ptrdiff_t b)
 		{
 			std::ptrdiff_t sign = 1;
 			bool inverse = false;
