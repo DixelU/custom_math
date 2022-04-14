@@ -1,7 +1,7 @@
-# custom_matrix_types
+# custom_math
 
-This is repository for often-used matrix classes. I began to lose the track of versions of these classes, and decided to upload them here
+This is repository for often-used math classes. I began to lose the track of versions of these classes, and decided to upload them here
 
-As far as i am aware, both classes requre at least `c++14` (`c++11` support will be added if needed)
+As far as i am aware, most classes requre at least `c++14` (`c++11` support will be added if needed)
 
-`sq_matrix` is constexpr friendly :)
+`sq_matrix`, `long_uint` are constexpr friendly :)
