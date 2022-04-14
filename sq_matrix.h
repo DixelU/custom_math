@@ -14,6 +14,20 @@
 
 #include "math_utils.h"
 
+#if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
+#ifndef __DIXELU_RELAXED_CONSTEXPR
+#define __DIXELU_RELAXED_CONSTEXPR constexpr
+#endif
+#else
+#ifndef __DIXELU_RELAXED_CONSTEXPR
+#define __DIXELU_RELAXED_CONSTEXPR
+#endif
+#endif
+
+#ifndef __DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+#define __DIXELU_CONDITIONAL_CPP14_SPECIFIERS inline __DIXELU_RELAXED_CONSTEXPR
+#endif
+
 namespace dixelu
 {
 	template<typename general_float_type, std::size_t dims>
@@ -75,37 +89,37 @@ namespace dixelu
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = pt[i];
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type get_norm2() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type get_norm2() const
 		{
 			general_float_type sum = general_float_type();
 			for (std::size_t i = 0; i < dims; ++i)
 				sum += base_array[i] * base_array[i];
 			return sum;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type get_norm(general_float_type deg) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type get_norm(general_float_type deg) const
 		{
 			general_float_type sum = general_float_type();
 			for (std::size_t i = 0; i < dims; ++i)
 				sum += utils::constexpr_pow<general_float_type>(base_array[i], deg);
 			return utils::constexpr_pow<general_float_type>(sum, 1. / deg);
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type get_norm() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type get_norm() const
 		{
 			return utils::constexpr_sqrt(get_norm2());
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS std::size_t get_dims() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS std::size_t get_dims() const
 		{
 			return dims;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type& operator[](std::size_t D)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type& operator[](std::size_t D)
 		{
 			return base_array[D];
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS const general_float_type& operator[](std::size_t D) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS const general_float_type& operator[](std::size_t D) const
 		{
 			return base_array[D];
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS void swap(self_type& P)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS void swap(self_type& P)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 			{
@@ -114,106 +128,106 @@ namespace dixelu
 				P.base_array[i] = value;
 			}
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type reverse() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type reverse() const
 		{
 			self_type N;
 			for (std::size_t i = 0; i < dims; ++i)
 				N[i] = base_array[dims - 1 - i];
 			return N;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator+(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator+(const self_type& P) const
 		{
 			self_type N;
 			for (std::size_t i = 0; i < dims; ++i)
 				N[i] = base_array[i] + P[i];
 			return N;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator+=(const self_type& P)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator+=(const self_type& P)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] += P[i];
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator-(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator-(const self_type& P) const
 		{
 			self_type N;
 			for (std::size_t i = 0; i < dims; ++i)
 				N[i] = base_array[i] - P[i];
 			return N;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator-=(const self_type& P)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator-=(const self_type& P)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] -= P[i];
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator*(general_float_type M) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator*(general_float_type M) const
 		{
 			self_type N;
 			for (std::size_t i = 0; i < dims; ++i)
 				N[i] = base_array[i] * M;
 			return N;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator*=(general_float_type M)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator*=(general_float_type M)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] *= M;
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator/(general_float_type M) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator/(general_float_type M) const
 		{
 			self_type N;
 			for (std::size_t i = 0; i < dims; ++i)
 				N[i] = base_array[i] / M;
 			return N;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator/=(general_float_type M)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator/=(general_float_type M)
 		{
 			return ((*this) *= (general_float_type(1) / M));
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type operator*(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type operator*(const self_type& P) const
 		{
 			general_float_type sum = general_float_type();
 			for (std::size_t i = 0; i < dims; ++i)
 				sum += base_array[i] * P[i];
 			return sum;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator-()
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator-()
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] = 0 - base_array[i];
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS bool operator<(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS bool operator<(const self_type& P) const
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				if (base_array[i] >= P.base_array[i])
 					return false;
 			return true;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS bool operator>=(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS bool operator>=(const self_type& P) const
 		{
 			return !(*this < P);
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS bool operator>(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS bool operator>(const self_type& P) const
 		{
 			return P < *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS bool operator==(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS bool operator==(const self_type& P) const
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				if (base_array[i] != P[i]) return false;
 			return true;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS bool operator!=(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS bool operator!=(const self_type& P) const
 		{
 			return !(*this == P);
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS bool operator<=(const self_type& P) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS bool operator<=(const self_type& P) const
 		{
 			return !(P < *this);
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type normalize() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type normalize() const
 		{
 			return (*this) / get_norm();
 		}
@@ -234,7 +248,7 @@ namespace dixelu
 	}
 
 	template<typename general_float_type, std::size_t dims>
-	__DIXELU_CONDITIONAL_SPECIFIERS point<general_float_type, dims> operator*(general_float_type M, point<general_float_type, dims> P)
+	__DIXELU_CONDITIONAL_CPP14_SPECIFIERS point<general_float_type, dims> operator*(general_float_type M, point<general_float_type, dims> P)
 	{
 		point<general_float_type, dims> N;
 		for (std::size_t i = 0; i < dims; ++i)
@@ -299,68 +313,68 @@ namespace dixelu
 			for (std::size_t i = 0; i < dims; ++i)
 				p[i].swap(base_array[i]);
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS point_type operator*(const point_type& p) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS point_type operator*(const point_type& p) const
 		{
 			point_type T;
 			for (std::size_t i = 0; i < dims; ++i)
 				T[i] = base_array[i] * p;
 			return T;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator*(general_float_type num) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator*(general_float_type num) const
 		{
 			self_type T;
 			for (std::size_t i = 0; i < dims; ++i)
 				T[i] = base_array[i] * num;
 			return T;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator*=(general_float_type num)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator*=(general_float_type num)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] *= num;
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator/(general_float_type num) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator/(general_float_type num) const
 		{
 			return *this * (1. / num);
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator/=(general_float_type num)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator/=(general_float_type num)
 		{
 			return ((*this) *= (1. / num));
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator+(const self_type& p) const {
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator+(const self_type& p) const {
 			self_type T;
 			for (std::size_t i = 0; i < dims; ++i)
 				T[i] = base_array[i] + p[i];
 			return T;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator-(const self_type& p) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator-(const self_type& p) const
 		{
 			self_type T;
 			for (std::size_t i = 0; i < dims; ++i)
 				T[i] = base_array[i] - p[i];
 			return T;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator+=(const self_type& p)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator+=(const self_type& p)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] += p[i];
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator-=(const self_type& p)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator-=(const self_type& p)
 		{
 			for (std::size_t i = 0; i < dims; ++i)
 				base_array[i] -= p[i];
 			return *this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS const point_type& operator[](std::size_t i) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS const point_type& operator[](std::size_t i) const
 		{
 			return base_array[i];
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS point_type& operator[](std::size_t i)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS point_type& operator[](std::size_t i)
 		{
 			return base_array[i];
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type& at(std::size_t point_id, std::size_t coordinate)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type& at(std::size_t point_id, std::size_t coordinate)
 		{
 			if (point_id < dims && coordinate < dims)
 			{
@@ -368,7 +382,7 @@ namespace dixelu
 			}
 			else return utilisation;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS const general_float_type& at(std::size_t point_id, std::size_t coordinate) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS const general_float_type& at(std::size_t point_id, std::size_t coordinate) const
 		{
 			if (point_id < dims && coordinate < dims)
 			{
@@ -376,7 +390,7 @@ namespace dixelu
 			}
 			else return utilisation;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator*(const self_type& M) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator*(const self_type& M) const
 		{
 			self_type P;
 			for (std::size_t x = 0; x < dims; ++x) 
@@ -392,7 +406,7 @@ namespace dixelu
 			}
 			return P;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type inverse() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type inverse() const
 		{
 			general_float_type max_value = general_float_type();
 			general_float_type mul = general_float_type();
@@ -431,7 +445,7 @@ namespace dixelu
 			}
 			return E;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type determinant() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type determinant() const
 		{
 			general_float_type determ = 1;
 			general_float_type max_value = 0, mul = 0;
@@ -466,7 +480,7 @@ namespace dixelu
 			}
 			return determ;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS static point_type solve_using_eulers_method(self_type A, point_type P)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS static point_type solve_using_eulers_method(self_type A, point_type P)
 		{
 			general_float_type max_value = 0, mul = 0;
 			std::size_t id = 0;
@@ -503,7 +517,7 @@ namespace dixelu
 			}
 			return P;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type operator^(int degree)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator^(int degree)
 		{
 			bool inverse = false;
 			if (degree < 0)
@@ -530,11 +544,11 @@ namespace dixelu
 			}
 			return inverse ? cur_matrix.inverse() : cur_matrix;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& operator^=(int degree)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator^=(int degree)
 		{
 			return ((*this) = (*this) ^ degree), * this;
 		}
-		__DIXELU_CONDITIONAL_SPECIFIERS minor_type
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS minor_type
 			minor_matrix(const std::size_t& x_minor, const std::size_t& y_minor) const
 		{
 			auto minor_index = [](std::size_t x, std::size_t y, std::size_t minor_x, std::size_t minor_y) ->
@@ -567,7 +581,7 @@ namespace dixelu
 		}
 
 		template<std::size_t new_dims>
-		__DIXELU_CONDITIONAL_SPECIFIERS sq_matrix<general_float_type, new_dims>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS sq_matrix<general_float_type, new_dims>
 			to(std::size_t start_index = 0)
 		{
 			sq_matrix<general_float_type, new_dims> new_matrix;
@@ -584,7 +598,7 @@ namespace dixelu
 			return new_matrix;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& transpose()
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& transpose()
 		{
 			for (std::size_t y = 0; y < dims; ++y)
 				for (std::size_t x = 0; x < dims; ++x)
@@ -596,7 +610,7 @@ namespace dixelu
 			return *this;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type trace() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type trace() const
 		{
 			general_float_type sum(0);
 			for (std::size_t i = 0; i < dims; ++i)
@@ -604,14 +618,14 @@ namespace dixelu
 			return sum;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type ppow(double p) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type ppow(double p) const
 		{
 			self_type mx(*this);
 			mx.selfppow(p);
 			return mx;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& selfppow(double p)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& selfppow(double p)
 		{
 			for (std::size_t y = 0; y < dims; ++y)
 				for (std::size_t x = 0; x < dims; ++x)
@@ -619,14 +633,14 @@ namespace dixelu
 			return *this;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type pabs() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type pabs() const
 		{
 			self_type mx(*this);
 			mx.selfpabs();
 			return mx;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& selfpabs()
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& selfpabs()
 		{
 			for (std::size_t y = 0; y < dims; ++y)
 				for (std::size_t x = 0; x < dims; ++x)
@@ -634,7 +648,7 @@ namespace dixelu
 			return *this;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS general_float_type psum() const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS general_float_type psum() const
 		{
 			general_float_type s = general_float_type(0);
 			for (std::size_t y = 0; y < dims; ++y)
@@ -643,7 +657,7 @@ namespace dixelu
 			return s;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& selfapply(const std::function<void(general_float_type&)>& func)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& selfapply(const std::function<void(general_float_type&)>& func)
 		{
 			for (std::size_t y = 0; y < dims; ++y)
 				for (std::size_t x = 0; x < dims; ++x)
@@ -651,14 +665,14 @@ namespace dixelu
 			return *this;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type apply(const std::function<void(general_float_type&)>& func) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type apply(const std::function<void(general_float_type&)>& func) const
 		{
 			self_type mx(*this);
 			mx.selfapply(func);
 			return mx;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type& selfapply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func)
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& selfapply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func)
 		{
 			for (std::size_t y = 0; y < dims; ++y)
 				for (std::size_t x = 0; x < dims; ++x)
@@ -666,7 +680,7 @@ namespace dixelu
 			return *this;
 		}
 
-		__DIXELU_CONDITIONAL_SPECIFIERS self_type apply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func) const
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type apply_indexed(const std::function<void(general_float_type&, size_t, size_t)>& func) const
 		{
 			self_type mx(*this);
 			mx.selfapply_indexed(func);
@@ -675,7 +689,7 @@ namespace dixelu
 	};
 
 	template<typename general_float_type, std::size_t dims>
-	__DIXELU_CONDITIONAL_SPECIFIERS point<general_float_type, dims>
+	__DIXELU_CONDITIONAL_CPP14_SPECIFIERS point<general_float_type, dims>
 		cross_prod(const std::array<point<general_float_type, dims>, 
 		sq_matrix<general_float_type, dims>::minor_type_size>& points)
 	{
@@ -697,7 +711,7 @@ namespace dixelu
 	}
 
 	template<size_t dims, typename general_float_type>
-	__DIXELU_CONDITIONAL_SPECIFIERS std::ostream& operator<<(std::ostream& in,
+	__DIXELU_CONDITIONAL_CPP14_SPECIFIERS std::ostream& operator<<(std::ostream& in,
 		const sq_matrix<general_float_type, dims>& M)
 	{
 		for (size_t y = 0; y < dims; ++y)
