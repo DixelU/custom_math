@@ -697,47 +697,47 @@ namespace std
 	class numeric_limits<dixelu::long_uint<deg>>
 	{
 		using base = dixelu::long_uint<deg>;
-		static const bool is_specialized = true;
+		static constexpr bool is_specialized = true;
 
-	    static constexpr base min() noexcept { return 0; }
+		static constexpr base min() noexcept { return 0; }
 		static constexpr base max() noexcept { return base(~0, nullptr); }
-	    static constexpr base lowest() noexcept { return 0; }
-	
-	    static constexpr int  digits     = base::bits;
-	    static constexpr int  digits10   = base::bits / 3.32192809488736234787031942948939017586483139302458061205475639581593477660862521585013974335937015509966;
-	    static constexpr bool is_signed  = false;
-	    static constexpr bool is_integer = true;
-	    static constexpr bool is_exact   = true;
-	    static constexpr int  radix      = 2;
-	
-	    static constexpr base epsilon() noexcept { return base(0u); }
-	    static constexpr base round_error() noexcept { return base(0u); }
-	
-	    static constexpr int min_exponent   = 0;
-	    static constexpr int min_exponent10 = 0;
-	    static constexpr int max_exponent   = 0;
-	    static constexpr int max_exponent10 = 0;
+		static constexpr base lowest() noexcept { return 0; }
+
+		static constexpr int  digits     = base::bits;
+		static constexpr int  digits10   = base::bits / 3.32192809488736234787031942948939017586483139302458061205475639581593477660862521585013974335937015509966;
+		static constexpr bool is_signed  = false;
+		static constexpr bool is_integer = true;
+		static constexpr bool is_exact   = true;
+		static constexpr int  radix      = 2;
+
+		static constexpr base epsilon() noexcept { return base(0u); }
+		static constexpr base round_error() noexcept { return base(0u); }
+
+		static constexpr int min_exponent   = 0;
+		static constexpr int min_exponent10 = 0;
+		static constexpr int max_exponent   = 0;
+		static constexpr int max_exponent10 = 0;
 		static constexpr int max_digits10 = 0;
-	
-	    static constexpr bool has_infinity      = false;
-	    static constexpr bool has_quiet_NaN     = false;
-	    static constexpr bool has_signaling_NaN = false;
-	
-	    static constexpr float_denorm_style has_denorm      = denorm_absent;
-	    static constexpr bool               has_denorm_loss = false;
-	
-	    static constexpr base infinity() noexcept  { return base(0U); }	
-	    static constexpr base quiet_NaN() noexcept { return base(0u); }
-	    static constexpr base signaling_NaN() noexcept { return base(0u); }
-	    static constexpr base denorm_min() noexcept { return base(0u); }
-	    
-	    static constexpr bool is_iec559  = false;
-	    static constexpr bool is_bounded = true;
-	    static constexpr bool is_modulo  = true;
-	
-	    static constexpr bool traps                         = false;
-	    static constexpr bool tinyness_before               = false;
-	    static constexpr      float_round_style round_style = round_toward_zero;
+
+		static constexpr bool has_infinity      = false;
+		static constexpr bool has_quiet_NaN     = false;
+		static constexpr bool has_signaling_NaN = false;
+
+		static constexpr float_denorm_style has_denorm      = denorm_absent;
+		static constexpr bool               has_denorm_loss = false;
+
+		static constexpr base infinity() noexcept  { return base(0U); }	
+		static constexpr base quiet_NaN() noexcept { return base(0u); }
+		static constexpr base signaling_NaN() noexcept { return base(0u); }
+		static constexpr base denorm_min() noexcept { return base(0u); }
+
+		static constexpr bool is_iec559  = false;
+		static constexpr bool is_bounded = true;
+		static constexpr bool is_modulo  = true;
+
+		static constexpr bool traps                         = false;
+		static constexpr bool tinyness_before               = false;
+		static constexpr      float_round_style roun
 	};
 }
 #endif //_DIXELU_INTEGERS_H_
