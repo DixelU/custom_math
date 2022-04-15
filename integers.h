@@ -20,6 +20,10 @@
 #ifndef __DIXELU_STRICT_CONSTEXPR
 #define __DIXELU_STRICT_CONSTEXPR constexpr
 #endif
+#else 
+#ifndef __DIXELU_STRICT_CONSTEXPR
+#define __DIXELU_STRICT_CONSTEXPR
+#endif
 #endif
 
 #include <limits.h>
