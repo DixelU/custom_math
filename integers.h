@@ -2,13 +2,9 @@
 #define _DIXELU_INTEGERS_H_
 
 #if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
+
 #ifndef __DIXELU_RELAXED_CONSTEXPR
 #define __DIXELU_RELAXED_CONSTEXPR constexpr
-#endif
-#else
-#if (defined(__cpp_constexpr) && (__cpp_constexpr >= 200704L))
-#ifndef __DIXELU_STRICT_CONSTEXPR
-#define __DIXELU_STRICT_CONSTEXPR constexpr
 #endif
 #else
 #ifndef __DIXELU_RELAXED_CONSTEXPR
@@ -20,7 +16,14 @@
 #define __DIXELU_CONDITIONAL_SPECIFIERS inline __DIXELU_RELAXED_CONSTEXPR
 #endif
 
+#if (defined(__cpp_constexpr) && (__cpp_constexpr >= 200704L))
+#ifndef __DIXELU_STRICT_CONSTEXPR
+#define __DIXELU_STRICT_CONSTEXPR constexpr
+#endif
+#endif
+
 #include <limits.h>
+#include <limits>
 #include <type_traits>
 #include <cinttypes>
 #include <string>
@@ -725,15 +728,12 @@ namespace std
 	    static constexpr base denorm_min() noexcept { return base(0u); }
 	    
 	    static constexpr bool is_iec559  = false;
-	    static constexpr bool is_bounded = false;
-	    static constexpr bool is_modulo  = false;
+	    static constexpr bool is_bounded = true;
+	    static constexpr bool is_modulo  = true;
 	
 	    static constexpr bool traps                         = false;
 	    static constexpr bool tinyness_before               = false;
 	    static constexpr      float_round_style round_style = round_toward_zero;
-		
-		static constexpr bool is_modulo = true;
-		static constexpr bool is_iec559 = false;
-	}
+	};
 }
 #endif //_DIXELU_INTEGERS_H_
