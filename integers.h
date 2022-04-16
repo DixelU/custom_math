@@ -28,6 +28,7 @@
 
 #include <limits.h>
 #include <limits>
+#include <iostream>
 #include <type_traits>
 #include <cinttypes>
 #include <string>
@@ -64,7 +65,9 @@ namespace dixelu
 		static constexpr size_type bits = details::tree_bits<deg, base_type>::value;
 		static constexpr size_type down_type_bits = bits >> 1;
 		static constexpr size_type size = down_type_bits / base_bits;
-
+		
+		struct __fill_fields_tag {};
+		
 		down_type hi;
 		down_type lo;
 
@@ -73,11 +76,23 @@ namespace dixelu
 			hi(), lo(value) 
 		{ }
 		
+		template<uint64_t __deg = deg>
 		__DIXELU_STRICT_CONSTEXPR
-		long_uint(base_type value, std::nullptr_t fill_fields_flag) : 
+		explicit long_uint(base_type value, 
+			const __fill_fields_tag& fill_fields_tag,
+			typename std::enable_if<(__deg > 0), void>::type* = 0) : 
+			hi(value, (typename long_uint<__deg-1>::__fill_fields_tag){}), 
+            lo(value, (typename long_uint<__deg-1>::__fill_fields_tag){}) 
+		{ }
+		
+		template<uint64_t __deg=deg>
+		__DIXELU_STRICT_CONSTEXPR
+		explicit long_uint(base_type value,
+			const __fill_fields_tag& fill_fields_tag,
+			typename std::enable_if<(__deg == 0), void>::type* = 0) : 
 			hi(value), lo(value) 
 		{ }
-
+		
 		template<uint64_t __deg>
 		__DIXELU_RELAXED_CONSTEXPR
 		explicit long_uint(const long_uint<__deg>& value,
@@ -663,23 +678,19 @@ namespace dixelu
 				str_size -= 2;
 				str += 2;
 			}
-
 			self_type value;
 			size_type leftout_size = std::min(radix_size, str_size);
 			char* end = (char*)str + leftout_size;
-
 			while (str_size)
 			{
 				auto ull_value = std::strtoull(str, &end, 16);
 				value <<= 64;
 				value |= self_type(ull_value);
-
 				str += leftout_size;
 				str_size -= leftout_size;
 				leftout_size = std::min(radix_size, str_size);
 				end = (char*)str + leftout_size;
 			}
-
 			return value;
 		}*/
 	};
@@ -700,7 +711,7 @@ namespace std
 		static constexpr bool is_specialized = true;
 
 		static constexpr base min() noexcept { return 0; }
-		static constexpr base max() noexcept { return base(~0, nullptr); }
+		static constexpr base max() noexcept { return base(~0, base::__fill_fields_tag()); }
 		static constexpr base lowest() noexcept { return 0; }
 
 		static constexpr int  digits     = base::bits;
@@ -737,7 +748,7 @@ namespace std
 
 		static constexpr bool traps                         = false;
 		static constexpr bool tinyness_before               = false;
-		static constexpr      float_round_style roun
+		static constexpr float_round_style round_style 		= round_toward_zero;
 	};
 }
 #endif //_DIXELU_INTEGERS_H_
