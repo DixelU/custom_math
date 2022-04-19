@@ -259,7 +259,7 @@ namespace dixelu
 	template<typename general_float_type, std::size_t dims>
 	struct sq_matrix
 	{
-		static constexpr general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
+		//static constexpr general_float_type GFLOAT_EPSILON = std::numeric_limits<general_float_type>::epsilon();
 		static constexpr std::size_t minor_type_size = (dims > 1) ? dims - 1 : 1;
 		general_float_type utilisation = general_float_type();
 
@@ -424,7 +424,7 @@ namespace dixelu
 						id = coid;
 					}
 				}
-				if (utils::constexpr_abs(max_value) <= GFLOAT_EPSILON)
+				if (utils::constexpr_abs(max_value) <= std::numeric_limits<general_float_type>::epsilon())
 					return self_type();
 				if (id != step)
 				{
@@ -463,7 +463,7 @@ namespace dixelu
 						id = coid;
 					}
 				}
-				if (utils::constexpr_abs(max_value) <= GFLOAT_EPSILON)
+				if (utils::constexpr_abs(max_value) <= std::numeric_limits<general_float_type>::epsilon())
 					return 0;
 				if (id != step)
 					A[id].swap(A[step]);
@@ -496,7 +496,7 @@ namespace dixelu
 						id = coid;
 					}
 				}
-				if (utils::constexpr_abs(max_value) <= GFLOAT_EPSILON)
+				if (utils::constexpr_abs(max_value) <= std::numeric_limits<general_float_type>::epsilon())
 					return point_type();
 				if (id != step)
 				{
