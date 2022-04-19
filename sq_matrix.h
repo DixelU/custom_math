@@ -1,3 +1,5 @@
+#endif // _DIXELU_MATH_UTILS_H_
+
 #ifndef _DIXELU_SQ_MATRIX_H_
 #define _DIXELU_SQ_MATRIX_H_
 
@@ -526,8 +528,8 @@ namespace dixelu
 				degree = -degree;
 			}
 			else if (!degree)
-				return self_type(1.);
-			self_type cur_matrix(1.), deg_co_matrix(*this);
+				return self_type(1);
+			self_type cur_matrix(1), deg_co_matrix(*this);
 			while (degree)
 			{
 				switch (degree & 1)
