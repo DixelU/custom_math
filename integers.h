@@ -518,7 +518,7 @@ namespace dixelu
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg), size_type> __leading_zeros() const
+		resolved_return_type<(__deg > 0), size_type> __leading_zeros() const
 		{
 			if (hi == 0)
 				return lo.__leading_zeros() + down_type_bits;
@@ -527,7 +527,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(!__deg), size_type> __leading_zeros() const
+		resolved_return_type<(__deg == 0), size_type> __leading_zeros() const
 		{
 			size_type b = 0, n = 0;
 			base_type a = (hi) ? hi : ((n += base_bits), lo);
@@ -542,7 +542,7 @@ namespace dixelu
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg), size_type> __trailing_zeros() const
+		resolved_return_type<(__deg > 0), size_type> __trailing_zeros() const
 		{
 			if (lo == 0)
 				return hi.__trailing_zeros() + down_type_bits;
@@ -551,7 +551,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(!__deg), size_type> __trailing_zeros() const
+		resolved_return_type<(__deg == 0), size_type> __trailing_zeros() const
 		{
 			size_type b = 0, n = 0;
 			base_type a = (lo) ? lo : ((n += base_bits), hi);
