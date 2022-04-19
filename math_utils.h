@@ -5,9 +5,15 @@
 #ifndef __DIXELU_RELAXED_CONSTEXPR
 #define __DIXELU_RELAXED_CONSTEXPR constexpr
 #endif
+#ifndef __DIXELU_ATMOST_ONE_CONSTRUCTION
+#define __DIXELU_ATMOST_ONE_CONSTRUCTION __DIXELU_RELAXED_CONSTEXPR
+#endif
 #else
 #ifndef __DIXELU_RELAXED_CONSTEXPR
 #define __DIXELU_RELAXED_CONSTEXPR
+#endif
+#ifndef __DIXELU_ATMOST_ONE_CONSTRUCTION
+#define __DIXELU_ATMOST_ONE_CONSTRUCTION static const
 #endif
 #endif
 
@@ -184,7 +190,7 @@ namespace dixelu
 			template<typename T, unsigned int n>
 			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T root_approx(T x)
 			{
-				static __DIXELU_RELAXED_CONSTEXPR lookup_table<T, n> table{};
+				__DIXELU_ATMOST_ONE_CONSTRUCTION lookup_table<T, n> table{};
 				unsigned int guessed_begin = 0;
 				unsigned int guessed_end = lookup_table<T, n>::max_degree - 1;
 				do
