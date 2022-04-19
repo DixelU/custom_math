@@ -1,5 +1,3 @@
-#endif // _DIXELU_MATH_UTILS_H_
-
 #ifndef _DIXELU_SQ_MATRIX_H_
 #define _DIXELU_SQ_MATRIX_H_
 
