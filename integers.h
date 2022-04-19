@@ -72,7 +72,12 @@ namespace dixelu
 		down_type lo;
 
 		__DIXELU_STRICT_CONSTEXPR
-		long_uint(base_type value = 0) : 
+		long_uint() : 
+			hi(), lo() 
+		{ }
+
+		__DIXELU_STRICT_CONSTEXPR
+		long_uint(base_type value) : 
 			hi(), lo(value) 
 		{ }
 		
@@ -85,7 +90,7 @@ namespace dixelu
             lo(value, (typename long_uint<__deg-1>::__fill_fields_tag){}) 
 		{ }
 		
-		template<uint64_t __deg=deg>
+		template<uint64_t __deg = deg>
 		__DIXELU_STRICT_CONSTEXPR
 		explicit long_uint(base_type value,
 			const __fill_fields_tag& fill_fields_tag,
@@ -622,6 +627,13 @@ namespace dixelu
 			return (*this = (*this % rhs));
 		}
 
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+		self_type operator-() const
+		{
+			self_type res(*this);
+			return (self_type() - res);
+		}
+
 		// dumb
 		inline static std::string to_string(self_type value)
 		{
@@ -708,11 +720,12 @@ namespace std
 	class numeric_limits<dixelu::long_uint<deg>>
 	{
 		using base = dixelu::long_uint<deg>;
+	public:
 		static constexpr bool is_specialized = true;
 
-		static constexpr base min() noexcept { return 0; }
+		static constexpr base min() noexcept { return base(); }
 		static constexpr base max() noexcept { return base(~0, base::__fill_fields_tag()); }
-		static constexpr base lowest() noexcept { return 0; }
+		static constexpr base lowest() noexcept { return base(); }
 
 		static constexpr int  digits     = base::bits;
 		static constexpr int  digits10   = base::bits / 3.32192809488736234787031942948939017586483139302458061205475639581593477660862521585013974335937015509966;
@@ -721,8 +734,8 @@ namespace std
 		static constexpr bool is_exact   = true;
 		static constexpr int  radix      = 2;
 
-		static constexpr base epsilon() noexcept { return base(0u); }
-		static constexpr base round_error() noexcept { return base(0u); }
+		static constexpr base epsilon() noexcept { return base(); }
+		static constexpr base round_error() noexcept { return base(); }
 
 		static constexpr int min_exponent   = 0;
 		static constexpr int min_exponent10 = 0;
@@ -737,10 +750,10 @@ namespace std
 		static constexpr float_denorm_style has_denorm      = denorm_absent;
 		static constexpr bool               has_denorm_loss = false;
 
-		static constexpr base infinity() noexcept  { return base(0U); }	
-		static constexpr base quiet_NaN() noexcept { return base(0u); }
-		static constexpr base signaling_NaN() noexcept { return base(0u); }
-		static constexpr base denorm_min() noexcept { return base(0u); }
+		static constexpr base infinity() noexcept  { return base(); }	
+		static constexpr base quiet_NaN() noexcept { return base(); }
+		static constexpr base signaling_NaN() noexcept { return base(); }
+		static constexpr base denorm_min() noexcept { return base(); }
 
 		static constexpr bool is_iec559  = false;
 		static constexpr bool is_bounded = true;
