@@ -65,61 +65,59 @@ namespace dixelu
 		static constexpr size_type bits = details::tree_bits<deg, base_type>::value;
 		static constexpr size_type down_type_bits = bits >> 1;
 		static constexpr size_type size = down_type_bits / base_bits;
-		
+
 		struct __fill_fields_tag {};
-		
+
 		down_type hi;
 		down_type lo;
 
 		__DIXELU_STRICT_CONSTEXPR
-		long_uint() : 
-			hi(), lo() 
+			long_uint() :
+			hi(), lo()
 		{ }
 
 		__DIXELU_STRICT_CONSTEXPR
-		long_uint(base_type value) : 
-			hi(), lo(value) 
+			long_uint(base_type value) :
+			hi(), lo(value)
 		{ }
-		
+
 		template<uint64_t __deg = deg>
 		__DIXELU_STRICT_CONSTEXPR
-		explicit long_uint(base_type value, 
-			const __fill_fields_tag& fill_fields_tag,
-			typename std::enable_if<(__deg > 0), void>::type* = 0) : 
-			hi(value, typename long_uint<__deg-1>::__fill_fields_tag{}), 
-            lo(value, typename long_uint<__deg-1>::__fill_fields_tag{}) 
+			explicit long_uint(base_type value,
+				const __fill_fields_tag& fill_fields_tag,
+				typename std::enable_if<(__deg > 0), void>::type* = 0) :
+			hi(value, typename long_uint<__deg - 1>::__fill_fields_tag{}),
+			lo(value, typename long_uint<__deg - 1>::__fill_fields_tag{})
 		{ }
-		
+
 		template<uint64_t __deg = deg>
 		__DIXELU_STRICT_CONSTEXPR
-		explicit long_uint(base_type value,
-			const __fill_fields_tag& fill_fields_tag,
-			typename std::enable_if<(__deg == 0), void>::type* = 0) : 
-			hi(value), lo(value) 
+			explicit long_uint(base_type value,
+				const __fill_fields_tag& fill_fields_tag,
+				typename std::enable_if<(__deg == 0), void>::type* = 0) :
+			hi(value), lo(value)
 		{ }
-		
+
 		template<uint64_t __deg>
 		__DIXELU_RELAXED_CONSTEXPR
-		explicit long_uint(const long_uint<__deg>& value,
-			typename std::enable_if<(__deg < deg), void>::type* = 0) : hi(), lo(value) { }
+			explicit long_uint(const long_uint<__deg>& value,
+				typename std::enable_if<(__deg < deg), void>::type* = 0) : hi(), lo((down_type)value) { }
 
 		template<uint64_t __deg>
 		__DIXELU_RELAXED_CONSTEXPR
 		explicit long_uint(const long_uint<__deg>& value,
 			typename std::enable_if<(__deg > deg), void>::type* = 0) :
-			hi((typename std::conditional<__deg == 0, base_type, long_uint<__deg - 1>>::type)
-				(value.lo >> (down_type_bits >> 1))),
-			lo((typename std::conditional<__deg == 0, base_type, long_uint<__deg - 1>>::type)
-				(value.lo& (long_uint<__deg>(1) << ((down_type_bits >> 1)))))
+			hi(value.lo.hi),
+			lo(value.lo.lo)
 		{ }
 
 		template<uint64_t __deg>
 		__DIXELU_RELAXED_CONSTEXPR
-		explicit long_uint(const long_uint<__deg>& value,
-			typename std::enable_if<(__deg == deg), void>::type* = 0) : hi(value.hi), lo(value.lo) { }
+			explicit long_uint(const long_uint<__deg>& value,
+				typename std::enable_if<(__deg == deg), void>::type* = 0) : hi(value.hi), lo(value.lo) { }
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator|=(const self_type& rhs)
+			self_type& operator|=(const self_type& rhs)
 		{
 			hi |= rhs.hi;
 			lo |= rhs.lo;
@@ -127,7 +125,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator&=(const self_type& rhs)
+			self_type& operator&=(const self_type& rhs)
 		{
 			hi &= rhs.hi;
 			lo &= rhs.lo;
@@ -135,7 +133,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator^=(const self_type& rhs)
+			self_type& operator^=(const self_type& rhs)
 		{
 			hi ^= rhs.hi;
 			lo ^= rhs.lo;
@@ -143,7 +141,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator~() const
+			self_type operator~() const
 		{
 			long_uint res;
 			res.hi = ~hi;
@@ -152,7 +150,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator|(const self_type& rhs) const
+			self_type operator|(const self_type& rhs) const
 		{
 			long_uint res(*this);
 			res |= rhs;
@@ -160,7 +158,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator&(const self_type& rhs) const
+			self_type operator&(const self_type& rhs) const
 		{
 			long_uint res(*this);
 			res &= rhs;
@@ -168,7 +166,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator^(const self_type& rhs) const
+			self_type operator^(const self_type& rhs) const
 		{
 			long_uint res(*this);
 			res ^= rhs;
@@ -180,7 +178,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg > 0), bool> get_bit(size_type bit) const
+			resolved_return_type<(__deg > 0), bool> get_bit(size_type bit) const
 		{
 			if (bit < down_type_bits)
 				return lo.get_bit(bit);
@@ -190,7 +188,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg == 0), bool> get_bit(size_type bit) const
+			resolved_return_type<(__deg == 0), bool> get_bit(size_type bit) const
 		{
 			if (bit < down_type_bits)
 				return (lo >> bit) & 1;
@@ -200,7 +198,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg > 0), base_type&> operator[](size_type idx)
+			resolved_return_type<(__deg > 0), base_type&> operator[](size_type idx)
 		{
 			if (idx < down_type_bits / base_bits)
 				return lo[idx];
@@ -210,7 +208,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg == 0), base_type&> operator[](size_type idx)
+			resolved_return_type<(__deg == 0), base_type&> operator[](size_type idx)
 		{
 			if (idx < size)
 				return lo;
@@ -219,7 +217,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg > 0), const base_type&> operator[](size_type idx) const
+			resolved_return_type<(__deg > 0), const base_type&> operator[](size_type idx) const
 		{
 			if (idx < size)
 				return lo[idx];
@@ -229,7 +227,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg == 0), const base_type&> operator[](size_type idx) const
+			resolved_return_type<(__deg == 0), const base_type&> operator[](size_type idx) const
 		{
 			if (idx < size)
 				return lo;
@@ -238,7 +236,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg > 0), void>
+			resolved_return_type<(__deg > 0), void>
 			set_bit(size_type bit, bool bit_value)
 		{
 			if (bit < down_type_bits)
@@ -249,7 +247,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg == 0), void>
+			resolved_return_type<(__deg == 0), void>
 			set_bit(size_type bit, bool bit_value)
 		{
 			if (bit < down_type_bits)
@@ -269,34 +267,30 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator+=(const self_type& rhs)
+			self_type& operator+=(const self_type& rhs)
 		{
 			const bool lhs_lo_carried_bit = get_bit(down_type_bits - 1);
 			const bool rhs_lo_carried_bit = rhs.get_bit(down_type_bits - 1);
-			const bool carry_possibility = lhs_lo_carried_bit | rhs_lo_carried_bit;
+			const bool carry_possibility = lhs_lo_carried_bit ^ rhs_lo_carried_bit;
 			const bool definite_carry = lhs_lo_carried_bit & rhs_lo_carried_bit;
 
 			hi += rhs.hi;
 			lo += rhs.lo;
 
 			if (definite_carry)
-			{
 				hi += down_type(1);
-				return *this;
-			}
-
-			if (carry_possibility)
+			else if (carry_possibility)
 			{
 				const auto carried_bit = get_bit(down_type_bits - 1);
 				if (!carried_bit)
 					hi += down_type(1);
 			}
-			
+
 			return *this;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator+(const self_type& rhs) const
+			self_type operator+(const self_type& rhs) const
 		{
 			self_type res(*this);
 			res += rhs;
@@ -304,13 +298,13 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator-=(const self_type& rhs)
+			self_type& operator-=(const self_type& rhs)
 		{
 			return ((*this) += ((~rhs) + self_type(1)));
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator-(const self_type& rhs) const
+			self_type operator-(const self_type& rhs) const
 		{
 			self_type res(*this);
 			res -= rhs;
@@ -318,14 +312,14 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		explicit operator size_type() const
+			explicit operator size_type() const
 		{
 			return operator[](0);
 		}
 
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator<<=(size_type rhs)
+			self_type& operator<<=(size_type rhs)
 		{
 			rhs &= (bits - 1);
 
@@ -347,7 +341,7 @@ namespace dixelu
 
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator>>=(size_type rhs)
+			self_type& operator>>=(size_type rhs)
 		{
 			rhs &= (bits - 1);
 
@@ -368,7 +362,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator<<(size_type rhs) const
+			self_type operator<<(size_type rhs) const
 		{
 			self_type res(*this);
 			res <<= rhs;
@@ -376,7 +370,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator>>(size_type rhs) const
+			self_type operator>>(size_type rhs) const
 		{
 			self_type res(*this);
 			res >>= rhs;
@@ -385,21 +379,21 @@ namespace dixelu
 
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		explicit operator resolved_return_type<(__deg == deg || !__deg), long_uint<__deg>>() const
+			explicit operator resolved_return_type<(__deg == deg || !__deg), long_uint<__deg>>() const
 		{
 			return *this;
 		}
 
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		explicit operator resolved_return_type<(__deg < deg&& __deg), long_uint<__deg>>() const
+			explicit operator resolved_return_type<(__deg < deg&& __deg), long_uint<__deg>>() const
 		{
-			return (long_uint<deg - 1>)(lo);
+			return (long_uint<__deg>)(lo);
 		}
 
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		explicit operator resolved_return_type<(__deg > deg&& __deg), long_uint<__deg>>() const
+			explicit operator resolved_return_type<(__deg > deg&& __deg), long_uint<__deg>>() const
 		{
 			long_uint<deg + 1> res;
 			res.lo = *this;
@@ -407,7 +401,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator*(const self_type& rhs) const
+			self_type operator*(const self_type& rhs) const
 		{
 			auto up_result = long_uint<deg + 1>::__downtype_mul(
 				(long_uint<deg + 1>)(*this),
@@ -417,15 +411,29 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator*=(const self_type& rhs)
+			self_type& operator*=(const self_type& rhs)
 		{
 			return (*this = (*this * rhs));
 		}
 
+		template<typename T>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static T __downtype_mul_call(const T& lhs, const T& rhs,
+				typename std::enable_if<(std::is_same<T, typename long_uint<deg>::base_type>::value), void>::type* = 0)
+		{
+			return lhs * rhs;
+		}
+
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs,
-			typename std::enable_if<(__deg > 0), void>::type* = 0)
+			static long_uint<__deg> __downtype_mul_call(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
+		{
+			return __downtype_mul<__deg>(lhs, rhs);
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
 		{
 			using local_down_type = typename long_uint<__deg>::down_type;
 			constexpr size_type half_down_type_mask_bits = (long_uint<__deg>::down_type_bits >> 1);
@@ -438,79 +446,79 @@ namespace dixelu
 			const local_down_type lhs_hi = (lhs.lo >> half_down_type_mask_bits) & lolo_mask;
 			const local_down_type rhs_hi = (rhs.lo >> half_down_type_mask_bits) & lolo_mask;
 
-			const local_down_type hihi = __downtype_mul<__deg - 1>(lhs_hi, rhs_hi);
-			const local_down_type lolo = __downtype_mul<__deg - 1>(lhs_lo, rhs_lo);
-			const local_down_type hilo = __downtype_mul<__deg - 1>((lhs_hi + lhs_lo), (rhs_hi + rhs_lo)) - hihi - lolo;
+			const local_down_type hihi = __downtype_mul_call(lhs_hi, rhs_hi);
+			const local_down_type lolo = __downtype_mul_call(lhs_lo, rhs_lo);
+
+			bool lhs_diff_positive = true;
+			bool rhs_diff_positive = true;
+			const local_down_type lhs_abs_difference = (lhs_diff_positive = (lhs_hi > lhs_lo)) ? lhs_hi - lhs_lo : lhs_lo - lhs_hi;
+			const local_down_type rhs_abs_difference = (rhs_diff_positive = (rhs_hi > rhs_lo)) ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
+
+			const local_down_type hilo_sq = __downtype_mul_call(lhs_abs_difference, rhs_abs_difference);
+			local_down_type hilo;
+
+			if (lhs_diff_positive == rhs_diff_positive)
+			{
+				hilo = (hihi - hilo_sq + lolo);
+				//if (hilo - lolo + hilo_sq != hihi)
+					//std::cout << "eq " << hilo << " " << lolo << " " << hilo_sq << " " << hihi << std::endl;
+			}
+			else
+			{
+				hilo = (hihi + hilo_sq + lolo);
+				//if (hilo - lolo - hilo_sq != hihi)
+					//std::cout << "nq " << hilo << " " << lolo << " " << hilo_sq << " " << hihi << std::endl;
+			}
+
+			long_uint<__deg> res_hi;
+			long_uint<__deg> res_lo;
+			res_hi.hi = (hilo & hilo_mask) >> half_down_type_mask_bits;
+			res_lo.lo = (hilo & lolo_mask) << half_down_type_mask_bits;
 
 			long_uint<__deg> res;
+
 			res.hi = hihi;
 			res.lo = lolo;
-			res.hi += (hilo & hilo_mask) >> half_down_type_mask_bits;
-			res.lo += (hilo & lolo_mask) << half_down_type_mask_bits;
+			res += res_hi;
+			res += res_lo;
+
+			//std::cout << lhs << " * " << rhs << " = " << res << std::endl << std::endl;
 
 			return res;
 		}
 
-		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs,
-			typename std::enable_if<(__deg == 0), void>::type* = 0)
-		{
-			using local_down_type = typename long_uint<__deg>::down_type;
-			constexpr size_type half_down_type_mask_bits = (long_uint<__deg>::down_type_bits >> 1);
-			const local_down_type lolo_mask = (~local_down_type()) >> half_down_type_mask_bits;
-			const local_down_type hilo_mask = ~lolo_mask;
-
-			const local_down_type lhs_lo = lhs.lo & lolo_mask;
-			const local_down_type rhs_lo = rhs.lo & lolo_mask;
-			const local_down_type lhs_hi = (lhs.lo >> half_down_type_mask_bits) & lolo_mask;
-			const local_down_type rhs_hi = (rhs.lo >> half_down_type_mask_bits) & lolo_mask;
-
-			const local_down_type hihi = lhs_hi * rhs_hi;
-			const local_down_type lolo = lhs_lo * rhs_lo;
-			const local_down_type hilo = (lhs_hi + lhs_lo) * (rhs_hi + rhs_lo) - hihi - lolo;
-
-			long_uint<__deg> res;
-			res.hi = hihi;
-			res.lo = lolo;
-			res.hi += (hilo & hilo_mask) >> half_down_type_mask_bits;
-			res.lo += (hilo & lolo_mask) << half_down_type_mask_bits;
-
-			return res;
-		}
-
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		bool operator<(const self_type& rhs) const
+			bool operator<(const self_type& rhs) const
 		{
 			return hi < rhs.hi || (hi == rhs.hi && lo < rhs.lo);
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		bool operator==(const self_type& rhs) const
+			bool operator==(const self_type& rhs) const
 		{
 			return hi == rhs.hi && lo == rhs.lo;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		bool operator>(const self_type& rhs) const
+			bool operator>(const self_type& rhs) const
 		{
 			return hi > rhs.hi || (hi == rhs.hi && lo > rhs.lo);
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		bool operator>=(const self_type& rhs) const
+			bool operator>=(const self_type& rhs) const
 		{
 			return !((*this) < rhs);
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		bool operator<=(const self_type& rhs) const
+			bool operator<=(const self_type& rhs) const
 		{
 			return !((*this) > rhs);
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		bool operator!=(const self_type& rhs) const
+			bool operator!=(const self_type& rhs) const
 		{
 			return !((*this) == rhs);
 		}
@@ -518,7 +526,7 @@ namespace dixelu
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg > 0), size_type> __leading_zeros() const
+			resolved_return_type<(__deg > 0), size_type> __leading_zeros() const
 		{
 			if (hi == 0)
 				return lo.__leading_zeros() + down_type_bits;
@@ -527,7 +535,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg == 0), size_type> __leading_zeros() const
+			resolved_return_type<(__deg == 0), size_type> __leading_zeros() const
 		{
 			size_type b = 0, n = 0;
 			base_type a = (hi) ? hi : ((n += base_bits), lo);
@@ -542,7 +550,7 @@ namespace dixelu
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg > 0), size_type> __trailing_zeros() const
+			resolved_return_type<(__deg > 0), size_type> __trailing_zeros() const
 		{
 			if (lo == 0)
 				return hi.__trailing_zeros() + down_type_bits;
@@ -551,7 +559,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg = deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		resolved_return_type<(__deg == 0), size_type> __trailing_zeros() const
+			resolved_return_type<(__deg == 0), size_type> __trailing_zeros() const
 		{
 			size_type b = 0, n = 0;
 			base_type a = (lo) ? lo : ((n += base_bits), hi);
@@ -565,9 +573,9 @@ namespace dixelu
 
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		static self_type __divmod(self_type lhs,
-			const self_type& rhs,
-			self_type& rem_out, bool assign_rem = true)
+			static self_type __divmod(self_type lhs,
+				const self_type& rhs,
+				self_type& rem_out, bool assign_rem = true)
 		{
 			auto& a = lhs;
 			const auto& b = rhs;
@@ -600,7 +608,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator/(const self_type& rhs) const
+			self_type operator/(const self_type& rhs) const
 		{
 			self_type res;
 			res = __divmod(*this, rhs, res, false);
@@ -608,7 +616,7 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator%(const self_type& rhs) const
+			self_type operator%(const self_type& rhs) const
 		{
 			self_type res;
 			__divmod(*this, rhs, res, true);
@@ -616,19 +624,19 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator/=(const self_type& rhs)
+			self_type& operator/=(const self_type& rhs)
 		{
 			return (*this = (*this / rhs));
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type& operator%=(const self_type& rhs)
+			self_type& operator%=(const self_type& rhs)
 		{
 			return (*this = (*this % rhs));
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		self_type operator-() const
+			self_type operator-() const
 		{
 			self_type res(*this);
 			return (self_type() - res);
@@ -664,7 +672,7 @@ namespace dixelu
 			return res;
 		}
 
-		inline static self_type __from_decimal_string(const char* str, size_type str_size)
+		inline static self_type __from_decimal_char_string(const char* str, size_type str_size)
 		{
 			self_type value;
 			self_type radix = 10;
@@ -682,31 +690,36 @@ namespace dixelu
 			return value;
 		}
 
-	/*	static self_type __from_hex_string(const char* str, size_type str_size)
+		inline static self_type __from_decimal_std_string(const std::string& str)
 		{
-			constexpr size_type radix_size = 8;
-			if (str_size > 2 && (str[1] == 'x' || str[1] == 'X'))
+			return __from_decimal_char_string(str.data(), str.size());
+		}
+
+		/*	static self_type __from_hex_string(const char* str, size_type str_size)
 			{
-				str_size -= 2;
-				str += 2;
-			}
-			self_type value;
-			size_type leftout_size = std::min(radix_size, str_size);
-			char* end = (char*)str + leftout_size;
-			while (str_size)
-			{
-				auto ull_value = std::strtoull(str, &end, 16);
-				value <<= 64;
-				value |= self_type(ull_value);
-				str += leftout_size;
-				str_size -= leftout_size;
-				leftout_size = std::min(radix_size, str_size);
-				end = (char*)str + leftout_size;
-			}
-			return value;
-		}*/
+				constexpr size_type radix_size = 8;
+				if (str_size > 2 && (str[1] == 'x' || str[1] == 'X'))
+				{
+					str_size -= 2;
+					str += 2;
+				}
+				self_type value;
+				size_type leftout_size = std::min(radix_size, str_size);
+				char* end = (char*)str + leftout_size;
+				while (str_size)
+				{
+					auto ull_value = std::strtoull(str, &end, 16);
+					value <<= 64;
+					value |= self_type(ull_value);
+					str += leftout_size;
+					str_size -= leftout_size;
+					leftout_size = std::min(radix_size, str_size);
+					end = (char*)str + leftout_size;
+				}
+				return value;
+			}*/
 	};
-	
+
 	template <std::uint64_t deg>
 	inline std::ostream& operator<<(std::ostream& out, const dixelu::long_uint<deg>& a)
 	{
@@ -716,7 +729,7 @@ namespace dixelu
 
 namespace std
 {
-	template<dixelu::long_uint<0>::size_type deg> 
+	template<dixelu::long_uint<0>::size_type deg>
 	class numeric_limits<dixelu::long_uint<deg>>
 	{
 		using base = dixelu::long_uint<deg>;
@@ -727,41 +740,41 @@ namespace std
 		static constexpr base max() noexcept { return base(~0, base::__fill_fields_tag()); }
 		static constexpr base lowest() noexcept { return base(); }
 
-		static constexpr int  digits     = base::bits;
-		static constexpr int  digits10   = base::bits / 3.32192809488736234787031942948939017586483139302458061205475639581593477660862521585013974335937015509966;
-		static constexpr bool is_signed  = false;
+		static constexpr int  digits = base::bits;
+		static constexpr int  digits10 = base::bits / 3.32192809488736234787031942948939017586483139302458061205475639581593477660862521585013974335937015509966;
+		static constexpr bool is_signed = false;
 		static constexpr bool is_integer = true;
-		static constexpr bool is_exact   = true;
-		static constexpr int  radix      = 2;
+		static constexpr bool is_exact = true;
+		static constexpr int  radix = 2;
 
 		static constexpr base epsilon() noexcept { return base(); }
 		static constexpr base round_error() noexcept { return base(); }
 
-		static constexpr int min_exponent   = 0;
+		static constexpr int min_exponent = 0;
 		static constexpr int min_exponent10 = 0;
-		static constexpr int max_exponent   = 0;
+		static constexpr int max_exponent = 0;
 		static constexpr int max_exponent10 = 0;
 		static constexpr int max_digits10 = 0;
 
-		static constexpr bool has_infinity      = false;
-		static constexpr bool has_quiet_NaN     = false;
+		static constexpr bool has_infinity = false;
+		static constexpr bool has_quiet_NaN = false;
 		static constexpr bool has_signaling_NaN = false;
 
-		static constexpr float_denorm_style has_denorm      = denorm_absent;
+		static constexpr float_denorm_style has_denorm = denorm_absent;
 		static constexpr bool               has_denorm_loss = false;
 
-		static constexpr base infinity() noexcept  { return base(); }	
+		static constexpr base infinity() noexcept { return base(); }
 		static constexpr base quiet_NaN() noexcept { return base(); }
 		static constexpr base signaling_NaN() noexcept { return base(); }
 		static constexpr base denorm_min() noexcept { return base(); }
 
-		static constexpr bool is_iec559  = false;
+		static constexpr bool is_iec559 = false;
 		static constexpr bool is_bounded = true;
-		static constexpr bool is_modulo  = true;
+		static constexpr bool is_modulo = true;
 
-		static constexpr bool traps                         = false;
-		static constexpr bool tinyness_before               = false;
-		static constexpr float_round_style round_style 		= round_toward_zero;
+		static constexpr bool traps = false;
+		static constexpr bool tinyness_before = false;
+		static constexpr float_round_style round_style = round_toward_zero;
 	};
 }
 #endif //_DIXELU_INTEGERS_H_

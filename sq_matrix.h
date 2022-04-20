@@ -520,17 +520,18 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator^(int degree)
 		{
 			bool inverse = false;
+			unsigned int udegree = degree;
 			if (degree < 0)
 			{
 				inverse = true;
-				degree = -degree;
+				udegree = -degree;
 			}
 			else if (!degree)
 				return self_type(1);
 			self_type cur_matrix(1), deg_co_matrix(*this);
-			while (degree)
+			while (udegree)
 			{
-				switch (degree & 1)
+				switch (udegree & 1)
 				{
 				case 1:
 					cur_matrix = cur_matrix * deg_co_matrix;
@@ -540,7 +541,7 @@ namespace dixelu
 					deg_co_matrix = deg_co_matrix * deg_co_matrix;
 					break;
 				}
-				degree >>= 1;
+				udegree >>= 1;
 			}
 			return inverse ? cur_matrix.inverse() : cur_matrix;
 		}
