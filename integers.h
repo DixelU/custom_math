@@ -86,8 +86,8 @@ namespace dixelu
 		explicit long_uint(base_type value, 
 			const __fill_fields_tag& fill_fields_tag,
 			typename std::enable_if<(__deg > 0), void>::type* = 0) : 
-			hi(value, (typename long_uint<__deg-1>::__fill_fields_tag){}), 
-            lo(value, (typename long_uint<__deg-1>::__fill_fields_tag){}) 
+			hi(value, typename long_uint<__deg-1>::__fill_fields_tag{}), 
+            lo(value, typename long_uint<__deg-1>::__fill_fields_tag{}) 
 		{ }
 		
 		template<uint64_t __deg = deg>
