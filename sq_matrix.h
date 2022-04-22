@@ -31,7 +31,7 @@
 namespace dixelu
 {
 	template<typename general_float_type, std::size_t dims>
-	struct point 
+	struct point
 	{
 		general_float_type base_array[dims];
 		using general_inttype = std::conditional<
@@ -393,9 +393,9 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type operator*(const self_type& M) const
 		{
 			self_type P;
-			for (std::size_t x = 0; x < dims; ++x) 
+			for (std::size_t x = 0; x < dims; ++x)
 			{
-				for (std::size_t y = 0; y < dims; ++y) 
+				for (std::size_t y = 0; y < dims; ++y)
 				{
 					P.base_array[y][x] = general_float_type(0);
 					for (std::size_t i = 0; i < dims; ++i)
@@ -691,8 +691,8 @@ namespace dixelu
 
 	template<typename general_float_type, std::size_t dims>
 	__DIXELU_CONDITIONAL_CPP14_SPECIFIERS point<general_float_type, dims>
-		cross_prod(const std::array<point<general_float_type, dims>, 
-		sq_matrix<general_float_type, dims>::minor_type_size>& points)
+		cross_prod(const std::array<point<general_float_type, dims>,
+			sq_matrix<general_float_type, dims>::minor_type_size>& points)
 	{
 		if (dims > 1)
 		{

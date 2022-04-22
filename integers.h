@@ -29,7 +29,10 @@
 #include <limits.h>
 #include <limits>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <type_traits>
+#include <algorithm>
 #include <cinttypes>
 #include <string>
 
@@ -105,8 +108,8 @@ namespace dixelu
 
 		template<uint64_t __deg>
 		__DIXELU_RELAXED_CONSTEXPR
-		explicit long_uint(const long_uint<__deg>& value,
-			typename std::enable_if<(__deg > deg), void>::type* = 0) :
+			explicit long_uint(const long_uint<__deg>& value,
+				typename std::enable_if<(__deg > deg), void>::type* = 0) :
 			hi(value.lo.hi),
 			lo(value.lo.lo)
 		{ }
@@ -317,6 +320,12 @@ namespace dixelu
 			return operator[](0);
 		}
 
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			explicit operator bool() const
+		{
+			return ((bool)lo | (bool)hi);
+		}
+
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator<<=(size_type rhs)
@@ -386,7 +395,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			explicit operator resolved_return_type<(__deg < deg&& __deg), long_uint<__deg>>() const
+			explicit operator resolved_return_type<(__deg < deg && __deg), long_uint<__deg>>() const
 		{
 			return (long_uint<__deg>)(lo);
 		}
@@ -403,7 +412,7 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type operator*(const self_type& rhs) const
 		{
-			auto up_result = long_uint<deg + 1>::__downtype_mul(
+			auto up_result = long_uint<deg + 1>::__downtype_mul_long(
 				(long_uint<deg + 1>)(*this),
 				(long_uint<deg + 1>)rhs
 			);
@@ -431,61 +440,161 @@ namespace dixelu
 			return __downtype_mul<__deg>(lhs, rhs);
 		}
 
+
+
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static typename long_uint<__deg>::down_type
+			__downtype_get_lo(const typename long_uint<__deg>::down_type& value,
+				typename std::enable_if<(__deg == 0), void>::type* = 0)
+		{
+			return (value & 0x00000000ffffffffULL);
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static typename long_uint<__deg>::down_type
+			__downtype_get_lo(const typename long_uint<__deg>::down_type& value,
+				typename std::enable_if<(__deg > 0), void>::type* = 0)
+		{
+			typename long_uint<__deg>::down_type res;
+			res.lo = value.lo;
+			return res;
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static typename long_uint<__deg>::down_type
+			__downtype_get_hi(const typename long_uint<__deg>::down_type& value,
+				typename std::enable_if<(__deg == 0), void>::type* = 0)
+		{
+			return (value & 0xffffffff00000000ULL) >> 32;
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static typename long_uint<__deg>::down_type
+			__downtype_get_hi(const typename long_uint<__deg>::down_type& value,
+				typename std::enable_if<(__deg > 0), void>::type* = 0)
+		{
+			typename long_uint<__deg>::down_type res;
+			res.lo = value.hi;
+			return res;
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static long_uint<__deg> __downtype_mul_long(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
+		{
+			long_uint<__deg> carry(1);
+			long_uint<__deg> result;
+			long_uint<__deg> rolling_rhs = rhs;
+			long_uint<__deg> diminishing_lhs = lhs;
+			while(diminishing_lhs)
+			{
+				if(diminishing_lhs & carry)
+				{
+					result += rolling_rhs;
+					diminishing_lhs &= ~(carry);
+				}
+				rolling_rhs <<= 1;
+				carry <<= 1;
+			}
+			return result;
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+		// todo: fix
 			static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
 		{
 			using local_down_type = typename long_uint<__deg>::down_type;
 			constexpr size_type half_down_type_mask_bits = (long_uint<__deg>::down_type_bits >> 1);
+			const local_down_type himask = (local_down_type(1) << half_down_type_mask_bits - 1);
 
-			const local_down_type lolo_mask = (~local_down_type()) >> half_down_type_mask_bits;
-			const local_down_type hilo_mask = ~lolo_mask;
-
-			const local_down_type lhs_lo = lhs.lo & lolo_mask;
-			const local_down_type rhs_lo = rhs.lo & lolo_mask;
-			const local_down_type lhs_hi = (lhs.lo >> half_down_type_mask_bits) & lolo_mask;
-			const local_down_type rhs_hi = (rhs.lo >> half_down_type_mask_bits) & lolo_mask;
+			const local_down_type lhs_lo = long_uint<__deg>::template __downtype_get_lo<__deg>(lhs.lo);
+			const local_down_type rhs_lo = long_uint<__deg>::template __downtype_get_lo<__deg>(rhs.lo);
+			const local_down_type lhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(rhs.lo);
+			const local_down_type rhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(rhs.lo);
 
 			const local_down_type hihi = __downtype_mul_call(lhs_hi, rhs_hi);
 			const local_down_type lolo = __downtype_mul_call(lhs_lo, rhs_lo);
 
-			bool lhs_diff_positive = true;
-			bool rhs_diff_positive = true;
-			const local_down_type lhs_abs_difference = (lhs_diff_positive = (lhs_hi > lhs_lo)) ? lhs_hi - lhs_lo : lhs_lo - lhs_hi;
-			const local_down_type rhs_abs_difference = (rhs_diff_positive = (rhs_hi > rhs_lo)) ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
+			bool possible_overflow =
+				((rhs_lo |
+					lhs_lo |
+					rhs_hi |
+					lhs_hi) & himask) != 0;
 
-			const local_down_type hilo_sq = __downtype_mul_call(lhs_abs_difference, rhs_abs_difference);
-			local_down_type hilo;
+			long_uint<__deg> hilo{};
 
-			if (lhs_diff_positive == rhs_diff_positive)
+			if (possible_overflow)
 			{
-				hilo = (hihi - hilo_sq + lolo);
-				//if (hilo - lolo + hilo_sq != hihi)
-					//std::cout << "eq " << hilo << " " << lolo << " " << hilo_sq << " " << hihi << std::endl;
+				/*std::cout << "PO " << to_hex_string(lhs) << " " << to_hex_string(rhs) << std::endl;
+
+				bool lhs_diff_positive = true;
+				bool rhs_diff_positive = true;
+				const local_down_type lhs_abs_difference = (lhs_diff_positive = (lhs_hi > lhs_lo)) ? lhs_hi - lhs_lo : lhs_lo - lhs_hi;
+				const local_down_type rhs_abs_difference = (rhs_diff_positive = (rhs_hi > rhs_lo)) ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
+				const local_down_type hihilolo = __downtype_mul_call(lhs_abs_difference, rhs_abs_difference);
+
+				if (lhs_diff_positive != rhs_diff_positive)
+				{
+					hilo = ((long_uint<__deg>)hihi - (long_uint<__deg>)hihilolo + (long_uint<__deg>)lolo);
+					std::cout << "eq " << 
+						to_hex_string(hihi) << " " << 
+						to_hex_string(lolo) << " " << 
+						to_hex_string(hihilolo) << " " << 
+						to_hex_string(hilo) << std::endl;
+				}
+				else
+				{
+					hilo = ((long_uint<__deg>)hihilolo + (long_uint<__deg>)hihi + (long_uint<__deg>)lolo);
+					std::cout << "nq " << 
+						to_hex_string(hihi) << " " << 
+						to_hex_string(lolo) << " " << 
+						to_hex_string(hihilolo) << " " << 
+						to_hex_string(hilo) << std::endl;
+				}*/
 			}
 			else
 			{
-				hilo = (hihi + hilo_sq + lolo);
-				//if (hilo - lolo - hilo_sq != hihi)
-					//std::cout << "nq " << hilo << " " << lolo << " " << hilo_sq << " " << hihi << std::endl;
+				const local_down_type rhs_sum = rhs_lo + rhs_lo;
+				const local_down_type lhs_sum = lhs_lo + lhs_lo;
+				const local_down_type hihilolo = __downtype_mul_call(rhs_sum, lhs_sum);
+				hilo = (long_uint<__deg>)(hihilolo - hihi - lolo);
 			}
 
-			long_uint<__deg> res_hi;
-			long_uint<__deg> res_lo;
-			res_hi.hi = (hilo & hilo_mask) >> half_down_type_mask_bits;
-			res_lo.lo = (hilo & lolo_mask) << half_down_type_mask_bits;
-
+			auto res_hi = (hilo >> half_down_type_mask_bits) << (2 * half_down_type_mask_bits);
+			auto res_lo = (hilo << (3 * half_down_type_mask_bits)) >> (3 * half_down_type_mask_bits);
+/*
+			if (possible_overflow)
+				std::cout << "gg " << 
+							to_hex_string(res_hi) << " " << 
+							to_hex_string(res_lo) << " " << 
+							std::endl;
+*/
 			long_uint<__deg> res;
 
 			res.hi = hihi;
 			res.lo = lolo;
+/*
+			if (possible_overflow)
+				std::cout << "pr " << 
+							to_hex_string(res) << " " << 
+							std::endl;
+*/
 			res += res_hi;
 			res += res_lo;
-
-			//std::cout << lhs << " * " << rhs << " = " << res << std::endl << std::endl;
-
+/*
+			if (possible_overflow)
+				std::cout << "as " << 
+							to_hex_string(res) << " " << 
+							std::endl;
+*/
 			return res;
 		}
+
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			bool operator<(const self_type& rhs) const
@@ -670,6 +779,68 @@ namespace dixelu
 				first_run = false;
 			}
 			return res;
+		}
+
+		template<std::uint64_t __deg, bool frontal_0x = true>
+		inline static resolved_return_type<(__deg > 0), std::string>
+			to_hex_string(const long_uint<__deg>& value, const bool leading_zeros_flag = false)
+		{
+			std::string result;
+			if (value.hi != 0)
+				result += to_hex_string<__deg - 1, false>(value.hi, leading_zeros_flag);
+			result += to_hex_string<__deg - 1, false>(value.lo, true);
+
+			if (!leading_zeros_flag && result.size() > 1 && result.front() == '0')
+			{
+				auto it = std::find_if(result.begin(), result.end(), [](const char& c) {return c > '0'; });
+				if(it == result.end())
+					--it;
+				if (it != result.begin())
+					result = std::string(it, result.end());
+			}
+			if (frontal_0x)
+				result = "0x" + result;
+			return result;
+		}
+
+		template<std::uint64_t __deg, bool frontal_0x = true>
+		inline static resolved_return_type<(__deg == 0), std::string>
+			to_hex_string(const long_uint<__deg>& value, const bool leading_zeros_flag = false)
+		{
+			std::stringstream ss;
+			if (value.hi)
+				ss << std::setfill('0') << std::setw(16) << std::hex << value.hi;
+			ss << std::setfill('0') << std::setw(16) << std::hex << value.lo;
+			auto result = ss.str();
+			
+			if (!leading_zeros_flag && result.size() > 1 && result.front() == '0')
+			{
+				auto it = std::find_if(result.begin(), result.end(), [](const char& c) {return c > '0'; });
+				if(it == result.end())
+					--it;
+				if (it != result.begin())
+					result = std::string(it, result.end());
+			}
+			if (frontal_0x)
+				result = "0x" + result;
+			return result;
+		}
+
+		inline static std::string to_hex_string(const base_type& value)
+		{
+			std::stringstream ss;
+			ss << std::setfill('0') << std::setw(16) << std::hex << value;
+			auto result = ss.str();
+
+			if (result.size() > 1 && result.front() == '0')
+			{
+				auto it = std::find_if(result.begin(), result.end(), [](const char& c) {return c > '0'; });
+				if(it == result.end())
+					--it;
+				if (it != result.begin())
+					result = std::string(it, result.end());
+			}
+			return "0x" + result;
 		}
 
 		inline static self_type __from_decimal_char_string(const char* str, size_type str_size)
