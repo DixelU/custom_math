@@ -85,9 +85,14 @@ public:
 	inline general_float_type determinant() const;
 	inline self_type resolve_ole(self_type point) const;
 
-	friend inline std::ostream& operator<<(std::ostream& out, const self_type& rightMatrix);
-	friend inline std::istream& operator>>(std::istream& in, self_type& rightMatrix);
-	friend inline matrix operator*(general_float_type a, const self_type& rightMatrix);
+	template<typename gft>	
+	friend inline std::ostream& operator<<(std::ostream& out, const matrix<gft>& rightMatrix);
+	
+	template<typename gft>	
+	friend inline std::istream& operator>>(std::istream& in, matrix<gft>& rightMatrix);
+	
+	template<typename gft>	
+	friend inline matrix operator*(general_float_type a, const matrix<gft>& rightMatrix);
 
 	inline matrix minor_matrix(const size_t& x_minor, const size_t& y_minor) const;
 

@@ -547,7 +547,7 @@ namespace dixelu
 		}
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS self_type& operator^=(int degree)
 		{
-			return ((*this) = (*this) ^ degree), * this;
+			return ((*this) = (*this) ^ degree), *this;
 		}
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS minor_type
 			minor_matrix(const std::size_t& x_minor, const std::size_t& y_minor) const
