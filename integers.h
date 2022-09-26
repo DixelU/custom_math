@@ -490,9 +490,9 @@ namespace dixelu
 			long_uint<__deg> result;
 			long_uint<__deg> rolling_rhs = rhs;
 			long_uint<__deg> diminishing_lhs = lhs;
-			while(diminishing_lhs)
+			while (diminishing_lhs)
 			{
-				if(diminishing_lhs & carry)
+				if (diminishing_lhs & carry)
 				{
 					result += rolling_rhs;
 					diminishing_lhs &= ~(carry);
@@ -505,7 +505,7 @@ namespace dixelu
 
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-		// todo: fix
+			// todo: fix
 			static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
 		{
 			using local_down_type = typename long_uint<__deg>::down_type;
@@ -541,19 +541,19 @@ namespace dixelu
 				if (lhs_diff_positive != rhs_diff_positive)
 				{
 					hilo = ((long_uint<__deg>)hihi - (long_uint<__deg>)hihilolo + (long_uint<__deg>)lolo);
-					std::cout << "eq " << 
-						to_hex_string(hihi) << " " << 
-						to_hex_string(lolo) << " " << 
-						to_hex_string(hihilolo) << " " << 
+					std::cout << "eq " <<
+						to_hex_string(hihi) << " " <<
+						to_hex_string(lolo) << " " <<
+						to_hex_string(hihilolo) << " " <<
 						to_hex_string(hilo) << std::endl;
 				}
 				else
 				{
 					hilo = ((long_uint<__deg>)hihilolo + (long_uint<__deg>)hihi + (long_uint<__deg>)lolo);
-					std::cout << "nq " << 
-						to_hex_string(hihi) << " " << 
-						to_hex_string(lolo) << " " << 
-						to_hex_string(hihilolo) << " " << 
+					std::cout << "nq " <<
+						to_hex_string(hihi) << " " <<
+						to_hex_string(lolo) << " " <<
+						to_hex_string(hihilolo) << " " <<
 						to_hex_string(hilo) << std::endl;
 				}*/
 			}
@@ -567,31 +567,31 @@ namespace dixelu
 
 			auto res_hi = (hilo >> half_down_type_mask_bits) << (2 * half_down_type_mask_bits);
 			auto res_lo = (hilo << (3 * half_down_type_mask_bits)) >> (3 * half_down_type_mask_bits);
-/*
-			if (possible_overflow)
-				std::cout << "gg " << 
-							to_hex_string(res_hi) << " " << 
-							to_hex_string(res_lo) << " " << 
-							std::endl;
-*/
+			/*
+						if (possible_overflow)
+							std::cout << "gg " <<
+										to_hex_string(res_hi) << " " <<
+										to_hex_string(res_lo) << " " <<
+										std::endl;
+			*/
 			long_uint<__deg> res;
 
 			res.hi = hihi;
 			res.lo = lolo;
-/*
-			if (possible_overflow)
-				std::cout << "pr " << 
-							to_hex_string(res) << " " << 
-							std::endl;
-*/
+			/*
+						if (possible_overflow)
+							std::cout << "pr " <<
+										to_hex_string(res) << " " <<
+										std::endl;
+			*/
 			res += res_hi;
 			res += res_lo;
-/*
-			if (possible_overflow)
-				std::cout << "as " << 
-							to_hex_string(res) << " " << 
-							std::endl;
-*/
+			/*
+						if (possible_overflow)
+							std::cout << "as " <<
+										to_hex_string(res) << " " <<
+										std::endl;
+			*/
 			return res;
 		}
 
@@ -793,7 +793,7 @@ namespace dixelu
 			if (!leading_zeros_flag && result.size() > 1 && result.front() == '0')
 			{
 				auto it = std::find_if(result.begin(), result.end(), [](const char& c) {return c > '0'; });
-				if(it == result.end())
+				if (it == result.end())
 					--it;
 				if (it != result.begin())
 					result = std::string(it, result.end());
@@ -812,11 +812,11 @@ namespace dixelu
 				ss << std::setfill('0') << std::setw(16) << std::hex << value.hi;
 			ss << std::setfill('0') << std::setw(16) << std::hex << value.lo;
 			auto result = ss.str();
-			
+
 			if (!leading_zeros_flag && result.size() > 1 && result.front() == '0')
 			{
 				auto it = std::find_if(result.begin(), result.end(), [](const char& c) {return c > '0'; });
-				if(it == result.end())
+				if (it == result.end())
 					--it;
 				if (it != result.begin())
 					result = std::string(it, result.end());
@@ -835,7 +835,7 @@ namespace dixelu
 			if (result.size() > 1 && result.front() == '0')
 			{
 				auto it = std::find_if(result.begin(), result.end(), [](const char& c) {return c > '0'; });
-				if(it == result.end())
+				if (it == result.end())
 					--it;
 				if (it != result.begin())
 					result = std::string(it, result.end());
@@ -895,6 +895,15 @@ namespace dixelu
 	inline std::ostream& operator<<(std::ostream& out, const dixelu::long_uint<deg>& a)
 	{
 		return (out << a.to_string(a));
+	}
+
+	template <std::uint64_t deg>
+	inline std::istream& operator>>(std::istream& in, dixelu::long_uint<deg>& a)
+	{
+		std::string str;
+		in >> str;
+		a = a.__from_decimal_std_string(str);
+		return in;
 	}
 }
 

@@ -1,12 +1,15 @@
 #ifndef _DIXELU_MATH_UTILS_H_
 #define _DIXELU_MATH_UTILS_H_
 
+#include <type_traits>
+#include <limits>
+
 #if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
 #ifndef __DIXELU_RELAXED_CONSTEXPR
 #define __DIXELU_RELAXED_CONSTEXPR constexpr
 #endif
 #ifndef __DIXELU_ATMOST_ONE_CONSTRUCTION
-#define __DIXELU_ATMOST_ONE_CONSTRUCTION __DIXELU_RELAXED_CONSTEXPR
+#define __DIXELU_ATMOST_ONE_CONSTRUCTION 
 #endif
 #else
 #ifndef __DIXELU_RELAXED_CONSTEXPR
@@ -65,7 +68,10 @@ namespace dixelu
 			struct try_unsigned
 			{
 				using type = typename
-					__try_unsigned<T, std::numeric_limits<T>::is_integer>::type;
+					__try_unsigned<
+					T,
+					std::numeric_limits<T>::is_integer&& std::numeric_limits<T>::is_signed
+					>::type;
 			};
 
 
@@ -88,7 +94,10 @@ namespace dixelu
 			struct try_signed
 			{
 				using type = typename
-					__try_signed<T, std::numeric_limits<T>::is_integer>::type;
+					__try_signed<
+					T,
+					std::numeric_limits<T>::is_integer&& std::numeric_limits<T>::is_signed
+					>::type;
 			};
 
 			template<typename T, bool is_signed>
@@ -98,14 +107,20 @@ namespace dixelu
 			struct __opposite_sign_type<T, true>
 			{
 				using type = typename
-					__try_unsigned<T, std::numeric_limits<T>::is_integer>::type;
+					__try_unsigned<
+					T,
+					std::numeric_limits<T>::is_integer&& std::numeric_limits<T>::is_signed
+					>::type;
 			};
 
 			template<typename T>
 			struct __opposite_sign_type<T, false>
 			{
 				using type = typename
-					__try_signed<T, std::numeric_limits<T>::is_integer>::type;
+					__try_signed<
+					T,
+					std::numeric_limits<T>::is_integer&& std::numeric_limits<T>::is_signed
+					>::type;
 			};
 
 			template<typename T>
@@ -119,7 +134,7 @@ namespace dixelu
 			template<typename T>
 			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __safe_mul(T x, T y)
 			{
-				if (std::numeric_limits<T>::is_integer)
+				if (std::numeric_limits<T>::is_integer && std::numeric_limits<T>::is_signed)
 				{
 					using uT = typename try_unsigned<T>::type;
 					bool xlz = x < 0;
@@ -137,7 +152,7 @@ namespace dixelu
 			template<typename T>
 			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __sqr(T x)
 			{
-				if (std::numeric_limits<T>::is_integer)
+				if (std::numeric_limits<T>::is_integer && std::numeric_limits<T>::is_signed)
 				{
 					using uT = typename try_unsigned<T>::type;
 					auto xabs = uT(constexpr_abs<T>(x));
@@ -208,7 +223,10 @@ namespace dixelu
 			template<typename T, std::size_t n>
 			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintroot(T x)
 			{
-				__DIXELU_RELAXED_CONSTEXPR T epsilon = std::numeric_limits<T>::epsilon();
+				__DIXELU_RELAXED_CONSTEXPR T __epsilon = std::numeric_limits<T>::epsilon();
+				__DIXELU_RELAXED_CONSTEXPR T has_epsilon = (__epsilon != T());
+				__DIXELU_RELAXED_CONSTEXPR T epsilon = has_epsilon ? __epsilon : T(1);
+
 				if (x == T(0))
 					return T(0);
 				T n_conv(n);
@@ -216,17 +234,14 @@ namespace dixelu
 				T x_k(root_approx<T, n>(x));
 				T x_prev_k(x_k);
 				T x_p_prev_k(0);
-				T x_k_nm1(0);
-				T coef(n_conv - 1);
-				coef /= n_conv;
 				T diff(0), diff_step(0);
 				T last_diff_multiplier = one;
 				do
 				{
-					x_k_nm1 = one / __uintpow(x_k, n - 1);
+					auto x_k_uintpow = __uintpow(x_k, n - 1);
 					x_p_prev_k = x_prev_k;
 					x_prev_k = x_k;
-					x_k = coef * x_k + (x / n_conv) * x_k_nm1;
+					x_k = (n_conv - 1) * x_k / n_conv + (x / n_conv) * one / x_k_uintpow;
 					diff = constexpr_abs(x_k - x_prev_k);
 					diff_step = constexpr_abs(x_k - x_p_prev_k);
 					last_diff_multiplier = (x_k > one) ? x_prev_k : one;
