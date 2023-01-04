@@ -36,6 +36,11 @@
 #include <cinttypes>
 #include <string>
 
+#include <stdint.h>
+#ifdef _MSC_VER
+#  include <intrin.h>
+#endif
+
 namespace dixelu
 {
 	namespace details
@@ -53,6 +58,56 @@ namespace dixelu
 			static constexpr base_type base_bits = sizeof(base_type) * CHAR_BIT;
 			static constexpr base_type value = base_bits * 2;
 		};
+
+		// https://stackoverflow.com/a/58381061
+		/* Prevents a partial vectorization from GCC. */
+#if defined(__GNUC__) && !defined(__clang__) && defined(__i386__)
+		// __attribute__((__target__("no-sse")))
+#endif
+		template<typename __uint64__type_emulator>
+		static constexpr __uint64__type_emulator multiply64to128(
+			__uint64__type_emulator lhs, 
+			__uint64__type_emulator rhs,
+			__uint64__type_emulator& high)
+		{
+			/*
+			 * GCC and Clang usually provide __uint128_t on 64-bit targets,
+			 * although Clang also defines it on WASM despite having to use
+			 * builtins for most purposes - including multiplication.
+			 */
+#if defined(__SIZEOF_INT128__) && !defined(__wasm__)
+			__uint128_t product = (__uint128_t)lhs * (__uint128_t)rhs;
+			high = (uint64_t)(product >> 64);
+			return (uint64_t)(product & 0xFFFFFFFFFFFFFFFF);
+
+			/* Use the _umul128 intrinsic on MSVC x64 to hint for mulq. */
+#elif defined(_MSC_VER) && defined(_M_IX64)
+#   pragma intrinsic(_umul128)
+			 /* This intentionally has the same signature. */
+			return _umul128(lhs, rhs, &high);
+
+#else
+			 /*
+			  * Fast yet simple grade school multiply that avoids
+			  * 64-bit carries with the properties of multiplying by 11
+			  * and takes advantage of UMAAL on ARMv6 to only need 4
+			  * calculations.
+			  */
+
+			  /* First calculate all of the cross products. */
+			__uint64__type_emulator lo_lo = (lhs & 0xFFFFFFFF) * (rhs & 0xFFFFFFFF);
+			__uint64__type_emulator hi_lo = (lhs >> 32) * (rhs & 0xFFFFFFFF);
+			__uint64__type_emulator lo_hi = (lhs & 0xFFFFFFFF) * (rhs >> 32);
+			__uint64__type_emulator hi_hi = (lhs >> 32) * (rhs >> 32);
+
+			/* Now add the products together. These will never overflow. */
+			__uint64__type_emulator cross = (lo_lo >> 32) + (hi_lo & 0xFFFFFFFF) + lo_hi;
+			__uint64__type_emulator upper = (hi_lo >> 32) + (cross >> 32) + hi_hi;
+
+			high = upper;
+			return (cross << 32) | (lo_lo & 0xFFFFFFFF);
+#endif /* portable */
+		}
 	}
 
 	/* long_uint<0> ~ 128 bit unsigned integer */
@@ -67,7 +122,8 @@ namespace dixelu
 		static constexpr size_type base_bits = details::tree_bits<0, base_type>::base_bits;
 		static constexpr size_type bits = details::tree_bits<deg, base_type>::value;
 		static constexpr size_type down_type_bits = bits >> 1;
-		static constexpr size_type size = down_type_bits / base_bits;
+		static constexpr size_type down_type_size = down_type_bits / base_bits;
+		static constexpr size_type size = bits / base_bits;
 
 		struct __fill_fields_tag {};
 
@@ -213,7 +269,7 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			resolved_return_type<(__deg == 0), base_type&> operator[](size_type idx)
 		{
-			if (idx < size)
+			if (idx < down_type_size)
 				return lo;
 			return hi;
 		}
@@ -222,9 +278,9 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			resolved_return_type<(__deg > 0), const base_type&> operator[](size_type idx) const
 		{
-			if (idx < size)
+			if (idx < down_type_size)
 				return lo[idx];
-			idx -= size;
+			idx -= down_type_size;
 			return hi[idx];
 		}
 
@@ -232,7 +288,7 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			resolved_return_type<(__deg == 0), const base_type&> operator[](size_type idx) const
 		{
-			if (idx < size)
+			if (idx < down_type_size)
 				return lo;
 			return hi;
 		}
@@ -326,12 +382,84 @@ namespace dixelu
 			return ((bool)lo | (bool)hi);
 		}
 
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS 
+			self_type& __experimental_shift_bits_left(size_type shift)
+		{
+			if (shift < base_bits)
+			{
+				const auto shifted_part_length = base_bits - shift;
+				const auto shift_cut_mask = (~0ULL << shifted_part_length);
+				
+				size_type mask_buffer = 0;
+				for (size_type i = 0; i < size; ++i)
+				{
+					auto& current_value = operator[](i);
+					mask_buffer = (current_value & shift_cut_mask) >> shifted_part_length;
+					current_value = (current_value << shift) | mask_buffer;
+				}
+
+				return *this;
+			}
+			else
+			{
+				auto rough_shift_length_in_bytes = shift / base_bits;
+				auto accurate_shift = shift - rough_shift_length_in_bytes * base_bits;
+
+				for (std::ptrdiff_t i = size - 1; i >= rough_shift_length_in_bytes; --i)
+				{
+					auto& this_el = operator[](i);
+					auto& prev_el = operator[](i - rough_shift_length_in_bytes);
+					this_el = prev_el;
+				}
+				for (std::ptrdiff_t i = rough_shift_length_in_bytes - 1; i >= 0; --i)
+					operator[](i) = 0;
+
+				return __experimental_shift_bits_left(accurate_shift);
+			}
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type& __experimental_shift_bits_right(size_type shift)
+		{
+			if (shift < base_bits)
+			{
+				const auto shifted_part_length = base_bits - shift;
+				const auto shift_cut_mask = (~0ULL >> shifted_part_length);
+
+				size_type mask_buffer = 0;
+				for (std::ptrdiff_t i = size - 1; i >= 0; --i)
+				{
+					auto& current_value = operator[](i);
+					auto shifted_value_copy = (current_value >> shift) | mask_buffer;
+					mask_buffer = (current_value & shift_cut_mask) << shifted_part_length;
+					current_value = shifted_value_copy;
+				}
+
+				return *this;
+			}
+			else
+			{
+				auto rough_shift_length_in_bytes = shift / base_bits;
+				auto accurate_shift = shift - rough_shift_length_in_bytes * base_bits;
+
+				for (std::ptrdiff_t i = 0; i < size - rough_shift_length_in_bytes; ++i)
+				{
+					auto& this_el = operator[](i);
+					auto& next_el = operator[](i + rough_shift_length_in_bytes);
+					this_el = next_el;
+				}
+				for (std::ptrdiff_t i = size - rough_shift_length_in_bytes; i < size; ++i)
+					operator[](i) = 0;
+
+				return __experimental_shift_bits_right(accurate_shift);
+			}
+		}
+
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator<<=(size_type rhs)
 		{
 			rhs &= (bits - 1);
-
 			if (rhs >= down_type_bits)
 			{
 				hi = (lo <<= (rhs - down_type_bits));
@@ -344,16 +472,13 @@ namespace dixelu
 				hi = (lo_copy >>= (down_type_bits - rhs)) | (hi_copy <<= rhs);
 				lo <<= rhs;
 			}
-
 			return *this;
 		}
-
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator>>=(size_type rhs)
 		{
 			rhs &= (bits - 1);
-
 			if (rhs >= down_type_bits)
 			{
 				lo = (hi >>= (rhs - down_type_bits));
@@ -366,7 +491,6 @@ namespace dixelu
 				lo = (hi_copy <<= (down_type_bits - rhs)) | (lo_copy >>= rhs);
 				hi >>= rhs;
 			}
-
 			return *this;
 		}
 
@@ -412,74 +536,13 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type operator*(const self_type& rhs) const
 		{
-			auto up_result = long_uint<deg + 1>::__downtype_mul_long(
-				(long_uint<deg + 1>)(*this),
-				(long_uint<deg + 1>)rhs
-			);
-			return up_result.lo;
+			return __direct_karatsuba_mul<deg>(*this, rhs).lo;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator*=(const self_type& rhs)
 		{
 			return (*this = (*this * rhs));
-		}
-
-		template<typename T>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			static T __downtype_mul_call(const T& lhs, const T& rhs,
-				typename std::enable_if<(std::is_same<T, typename long_uint<deg>::base_type>::value), void>::type* = 0)
-		{
-			return lhs * rhs;
-		}
-
-		template<std::uint64_t __deg>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			static long_uint<__deg> __downtype_mul_call(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
-		{
-			return __downtype_mul<__deg>(lhs, rhs);
-		}
-
-
-
-		template<std::uint64_t __deg>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			static typename long_uint<__deg>::down_type
-			__downtype_get_lo(const typename long_uint<__deg>::down_type& value,
-				typename std::enable_if<(__deg == 0), void>::type* = 0)
-		{
-			return (value & 0x00000000ffffffffULL);
-		}
-
-		template<std::uint64_t __deg>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			static typename long_uint<__deg>::down_type
-			__downtype_get_lo(const typename long_uint<__deg>::down_type& value,
-				typename std::enable_if<(__deg > 0), void>::type* = 0)
-		{
-			typename long_uint<__deg>::down_type res;
-			res.lo = value.lo;
-			return res;
-		}
-
-		template<std::uint64_t __deg>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			static typename long_uint<__deg>::down_type
-			__downtype_get_hi(const typename long_uint<__deg>::down_type& value,
-				typename std::enable_if<(__deg == 0), void>::type* = 0)
-		{
-			return (value & 0xffffffff00000000ULL) >> 32;
-		}
-
-		template<std::uint64_t __deg>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			static typename long_uint<__deg>::down_type
-			__downtype_get_hi(const typename long_uint<__deg>::down_type& value,
-				typename std::enable_if<(__deg > 0), void>::type* = 0)
-		{
-			typename long_uint<__deg>::down_type res;
-			res.lo = value.hi;
-			return res;
 		}
 
 		template<std::uint64_t __deg>
@@ -503,99 +566,119 @@ namespace dixelu
 			return result;
 		}
 
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+		static long_uint<0>
+			__direct_mul_call(
+				const base_type& lhs,
+				const base_type& rhs)
+		{
+			long_uint<0> result;
+			result.lo = details::multiply64to128(lhs, rhs, result.hi);
+			return result;
+		}
+		
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static long_uint<__deg + 1>
+			__direct_mul_call(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
+		{
+			return __direct_karatsuba_mul<__deg>(lhs, rhs);
+		}
+
+		template<std::uint64_t __deg>
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static long_uint<(__deg + 1)> __direct_karatsuba_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
+		{
+			if (!lhs || !rhs)
+				return {};
+
+			const auto& lhs_lo = lhs.lo;
+			const auto& rhs_lo = rhs.lo;
+			const auto& lhs_hi = lhs.hi;
+			const auto& rhs_hi = rhs.hi;
+
+			const long_uint<__deg> hihi = __direct_mul_call(lhs_hi, rhs_hi);
+			const long_uint<__deg> lolo = __direct_mul_call(lhs_lo, rhs_lo);
+
+			const bool rhs_diff_is_negative = rhs_hi > rhs_lo;
+			const auto rhs_diff = rhs_diff_is_negative ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
+			const bool lhs_diff_is_negative = lhs_lo > lhs_hi;
+			const auto lhs_diff = lhs_diff_is_negative ? lhs_lo - lhs_hi : lhs_hi - lhs_lo;
+
+			const bool hihilolo_is_negative = rhs_diff_is_negative ^ lhs_diff_is_negative;
+			const long_uint<__deg> hihilolo = __direct_mul_call(rhs_diff, lhs_diff);
+
+			long_uint<__deg + 1> hilo = (long_uint<__deg + 1>)hihi + (long_uint<__deg + 1>)lolo;
+
+			if (hihilolo_is_negative)
+				hilo -= (long_uint<__deg + 1>)hihilolo;
+			else
+				hilo += (long_uint<__deg + 1>)hihilolo;
+
+
+			long_uint<__deg + 1> res;
+
+			res.hi = hihi;
+			res.lo = lolo;
+
+			res += hilo << long_uint<__deg>::down_type_bits;
+
+			//std::cout << lhs.to_hex_string(lhs) << " x " << rhs.to_hex_string(rhs) << " = " << res.to_hex_string(res) << std::endl;
+
+			return res;
+		}
+		/*
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			// todo: fix
 			static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
 		{
+			if (!lhs || !rhs)
+				return {};
+
 			using local_down_type = typename long_uint<__deg>::down_type;
 			constexpr size_type half_down_type_mask_bits = (long_uint<__deg>::down_type_bits >> 1);
 			const local_down_type himask = (local_down_type(1) << half_down_type_mask_bits - 1);
 
 			const local_down_type lhs_lo = long_uint<__deg>::template __downtype_get_lo<__deg>(lhs.lo);
 			const local_down_type rhs_lo = long_uint<__deg>::template __downtype_get_lo<__deg>(rhs.lo);
-			const local_down_type lhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(rhs.lo);
+			const local_down_type lhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(lhs.lo);
 			const local_down_type rhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(rhs.lo);
 
 			const local_down_type hihi = __downtype_mul_call(lhs_hi, rhs_hi);
 			const local_down_type lolo = __downtype_mul_call(lhs_lo, rhs_lo);
 
-			bool possible_overflow =
-				((rhs_lo |
-					lhs_lo |
-					rhs_hi |
-					lhs_hi) & himask) != 0;
+			const bool rhs_diff_is_negative = rhs_hi > rhs_lo;
+			const local_down_type rhs_diff = rhs_diff_is_negative ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
+			const bool lhs_diff_is_negative = lhs_lo > lhs_hi;
+			const local_down_type lhs_diff = lhs_diff_is_negative ? lhs_lo - lhs_hi : lhs_hi - lhs_lo;
 
-			long_uint<__deg> hilo{};
+			const bool hihilolo_is_negative = rhs_diff_is_negative ^ lhs_diff_is_negative;
+			const local_down_type hihilolo = __downtype_mul_call(rhs_diff, lhs_diff);
 
-			if (possible_overflow)
-			{
-				/*std::cout << "PO " << to_hex_string(lhs) << " " << to_hex_string(rhs) << std::endl;
+			auto hilo = 
+				(long_uint<__deg>)hihi + 
+				(long_uint<__deg>)lolo;
 
-				bool lhs_diff_positive = true;
-				bool rhs_diff_positive = true;
-				const local_down_type lhs_abs_difference = (lhs_diff_positive = (lhs_hi > lhs_lo)) ? lhs_hi - lhs_lo : lhs_lo - lhs_hi;
-				const local_down_type rhs_abs_difference = (rhs_diff_positive = (rhs_hi > rhs_lo)) ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
-				const local_down_type hihilolo = __downtype_mul_call(lhs_abs_difference, rhs_abs_difference);
-
-				if (lhs_diff_positive != rhs_diff_positive)
-				{
-					hilo = ((long_uint<__deg>)hihi - (long_uint<__deg>)hihilolo + (long_uint<__deg>)lolo);
-					std::cout << "eq " <<
-						to_hex_string(hihi) << " " <<
-						to_hex_string(lolo) << " " <<
-						to_hex_string(hihilolo) << " " <<
-						to_hex_string(hilo) << std::endl;
-				}
-				else
-				{
-					hilo = ((long_uint<__deg>)hihilolo + (long_uint<__deg>)hihi + (long_uint<__deg>)lolo);
-					std::cout << "nq " <<
-						to_hex_string(hihi) << " " <<
-						to_hex_string(lolo) << " " <<
-						to_hex_string(hihilolo) << " " <<
-						to_hex_string(hilo) << std::endl;
-				}*/
-			}
+			if (hihilolo_is_negative)
+				hilo -= (long_uint<__deg>)hihilolo;
 			else
-			{
-				const local_down_type rhs_sum = rhs_lo + rhs_lo;
-				const local_down_type lhs_sum = lhs_lo + lhs_lo;
-				const local_down_type hihilolo = __downtype_mul_call(rhs_sum, lhs_sum);
-				hilo = (long_uint<__deg>)(hihilolo - hihi - lolo);
-			}
-
+				hilo += (long_uint<__deg>)hihilolo;
+			
 			auto res_hi = (hilo >> half_down_type_mask_bits) << (2 * half_down_type_mask_bits);
 			auto res_lo = (hilo << (3 * half_down_type_mask_bits)) >> (3 * half_down_type_mask_bits);
-			/*
-						if (possible_overflow)
-							std::cout << "gg " <<
-										to_hex_string(res_hi) << " " <<
-										to_hex_string(res_lo) << " " <<
-										std::endl;
-			*/
+			
 			long_uint<__deg> res;
 
 			res.hi = hihi;
 			res.lo = lolo;
-			/*
-						if (possible_overflow)
-							std::cout << "pr " <<
-										to_hex_string(res) << " " <<
-										std::endl;
-			*/
+			
 			res += res_hi;
 			res += res_lo;
-			/*
-						if (possible_overflow)
-							std::cout << "as " <<
-										to_hex_string(res) << " " <<
-										std::endl;
-			*/
+			
 			return res;
 		}
-
-
+		*/
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			bool operator<(const self_type& rhs) const
 		{
@@ -786,7 +869,7 @@ namespace dixelu
 			to_hex_string(const long_uint<__deg>& value, const bool leading_zeros_flag = false)
 		{
 			std::string result;
-			if (value.hi != 0)
+			if (leading_zeros_flag || value.hi)
 				result += to_hex_string<__deg - 1, false>(value.hi, leading_zeros_flag);
 			result += to_hex_string<__deg - 1, false>(value.lo, true);
 
@@ -808,7 +891,7 @@ namespace dixelu
 			to_hex_string(const long_uint<__deg>& value, const bool leading_zeros_flag = false)
 		{
 			std::stringstream ss;
-			if (value.hi)
+			if (leading_zeros_flag || value.hi)
 				ss << std::setfill('0') << std::setw(16) << std::hex << value.hi;
 			ss << std::setfill('0') << std::setw(16) << std::hex << value.lo;
 			auto result = ss.str();
