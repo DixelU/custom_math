@@ -48,6 +48,7 @@ namespace dixelu
 
 		namespace details
 		{
+			static constexpr size_t expected_maximum_of_complex_constexpr_operations = 8192;
 
 			template<typename T, bool is_int>
 			struct __try_unsigned {};
@@ -129,6 +130,19 @@ namespace dixelu
 				using type = typename
 					__opposite_sign_type<T, std::is_signed<T>::value>::type;
 			};
+			template <typename T, typename = int>
+			struct __has_constexpr_expenisve_member : 
+				std::false_type { };
+
+			template <typename T>
+			struct __has_constexpr_expenisve_member <T, 
+				decltype((void)((bool)T::is_contexpr_expenisve), 0)> 
+			{
+				constexpr static bool value = T::is_contexpr_expenisve;
+			};
+
+			template <typename T>
+			struct is_constexpr_expensive : __has_constexpr_expenisve_member<T> { };
 
 #ifndef WITHOUT_CONSTEXPR_FUNCTIONS
 			template<typename T>
@@ -177,23 +191,28 @@ namespace dixelu
 			}
 
 			template<typename T, unsigned int n>
-			struct lookup_table
+			struct __lookup_table_consts
 			{
 				static constexpr unsigned int radix = (std::numeric_limits<T>::radix) ? std::numeric_limits<T>::radix : 2;
 				static constexpr unsigned int max_degree_flt = (std::numeric_limits<T>::max_exponent / n);
 				static constexpr unsigned int max_degree_int = ((std::numeric_limits<T>::digits / n));
 				static constexpr unsigned int max_degree = (!max_degree_flt) ? max_degree_int : max_degree_flt;
-				T lookup_table_vals[max_degree]{};
-				T lookup_table_roots[max_degree]{};
+			};
+
+			template<typename T, unsigned int n>
+			struct lookup_table
+			{
+				T lookup_table_vals[__lookup_table_consts<T, n>::max_degree]{};
+				T lookup_table_roots[__lookup_table_consts<T, n>::max_degree]{};
 				__DIXELU_RELAXED_CONSTEXPR lookup_table() :
 					lookup_table_vals(), lookup_table_roots()
 				{
-					__DIXELU_RELAXED_CONSTEXPR T base(radix);
+					__DIXELU_RELAXED_CONSTEXPR T base(__lookup_table_consts<T, n>::radix);
 					__DIXELU_RELAXED_CONSTEXPR T zero(0);
 					T root = base;
 					lookup_table_vals[0] = zero;
 					lookup_table_roots[0] = zero;
-					for (unsigned int i = 1; i < max_degree; ++i)
+					for (unsigned int i = 1; i < __lookup_table_consts<T, n>::max_degree; ++i)
 					{
 						lookup_table_vals[i] = __uintpow(root, n);
 						lookup_table_roots[i] = root;
@@ -203,11 +222,17 @@ namespace dixelu
 			};
 
 			template<typename T, unsigned int n>
-			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T root_approx(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS 
+				typename std::enable_if<(
+						__lookup_table_consts<T, n>::max_degree &&
+						__lookup_table_consts<T, n>::max_degree < expected_maximum_of_complex_constexpr_operations &&
+						!is_constexpr_expensive<T>::value
+					), T>::type
+				root_approx(T x)
 			{
 				__DIXELU_ATMOST_ONE_CONSTRUCTION lookup_table<T, n> table{};
 				unsigned int guessed_begin = 0;
-				unsigned int guessed_end = lookup_table<T, n>::max_degree - 1;
+				unsigned int guessed_end = __lookup_table_consts<T, n>::max_degree - 1;
 				do
 				{
 					auto center = (guessed_end + guessed_begin) >> 1;
@@ -218,6 +243,18 @@ namespace dixelu
 
 				} while (guessed_end - guessed_begin > 1);
 				return table.lookup_table_roots[guessed_end];
+			}
+
+			template<typename T, unsigned int n>
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+				typename std::enable_if<(
+						!__lookup_table_consts<T, n>::max_degree ||
+						__lookup_table_consts<T, n>::max_degree >= expected_maximum_of_complex_constexpr_operations ||
+						is_constexpr_expensive<T>::value
+					), T>::type
+				root_approx(T x)
+			{
+				return x;
 			}
 
 			template<typename T, std::size_t n>
@@ -242,10 +279,13 @@ namespace dixelu
 					x_p_prev_k = x_prev_k;
 					x_prev_k = x_k;
 					x_k = (n_conv - 1) * x_k / n_conv + (x / n_conv) * one / x_k_uintpow;
-					diff = constexpr_abs(x_k - x_prev_k);
-					diff_step = constexpr_abs(x_k - x_p_prev_k);
+					diff = (x_k > x_prev_k) ? x_k - x_prev_k : x_prev_k - x_k;// constexpr_abs(x_k - x_prev_k);
+					diff_step = (x_k > x_prev_k) ? x_k - x_p_prev_k : x_p_prev_k - x_k; // constexpr_abs();
 					last_diff_multiplier = (x_k > one) ? x_prev_k : one;
-				} while (diff > epsilon * last_diff_multiplier && diff_step > epsilon * last_diff_multiplier);
+				} while (
+					(has_epsilon && diff > epsilon * last_diff_multiplier && diff_step > epsilon * last_diff_multiplier) ||
+					(!has_epsilon && (diff > __epsilon && diff_step > __epsilon))
+				);
 				return x_k;
 			}
 
@@ -360,6 +400,10 @@ namespace dixelu
 			template<typename T>
 			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __pow_explog(T a, T b)
 			{
+				if (a == T(0) && b == T(0))
+					return T(1);
+				if (a == T(0))
+					return T();
 				return __exp(b * __log(a));
 			}
 #endif

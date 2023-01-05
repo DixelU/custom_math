@@ -124,6 +124,7 @@ namespace dixelu
 		static constexpr size_type down_type_bits = bits >> 1;
 		static constexpr size_type down_type_size = down_type_bits / base_bits;
 		static constexpr size_type size = bits / base_bits;
+		static constexpr bool is_contexpr_expenisve = true; // change to false after optimisations;
 
 		struct __fill_fields_tag {};
 
@@ -614,7 +615,6 @@ namespace dixelu
 				hilo -= (long_uint<__deg + 1>)hihilolo;
 			else
 				hilo += (long_uint<__deg + 1>)hihilolo;
-
 
 			long_uint<__deg + 1> res;
 
