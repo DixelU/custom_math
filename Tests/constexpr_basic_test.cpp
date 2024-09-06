@@ -32,15 +32,15 @@ int constexpr_pow_test()
 
 	std::cout << " Got " << t << " in " <<
 		std::chrono::duration_cast<std::chrono::microseconds>(e - b).count() <<
-		" microsec (constexpr)" << std::endl;
+		" microsecond (constexpr)" << std::endl;
 
 	b = std::chrono::high_resolution_clock::now();
 	auto t2 = std::pow(x, p);
 	e = std::chrono::high_resolution_clock::now();
 
-	std::cout << " Got " << t << " in " <<
+	std::cout << " Got " << t2 << " in " <<
 		std::chrono::duration_cast<std::chrono::microseconds>(e - b).count() <<
-		" microsec (nonconstexpr)" << std::endl;
+		" microsecond (non constexpr)" << std::endl;
 
 	b = std::chrono::high_resolution_clock::now();
 	__DIXELU_RELAXED_CONSTEXPR auto pair = constexpr_matrix_proof();
@@ -50,7 +50,7 @@ int constexpr_pow_test()
 	std::cout << "Constexpr matrix test: ";
 	std::cout << pair.first << " " << pair.second << " ~ " << asdf_const << std::endl;
 
-	std::cout << "Proof of constexpr evauation: " <<
+	std::cout << "Proof of constexpr evaluation: " <<
 		std::chrono::duration_cast<std::chrono::microseconds>(e - b).count() <<
 		" microseconds between chrono::now calls" << std::endl;
 
@@ -71,9 +71,32 @@ void longuint_test()
 
 	auto begin = std::chrono::steady_clock::now();
 	auto d = a * b;
-	std::cout << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - begin).count() << " mcsec" << std::endl;
+	std::cout << "Largest ints multiplication: "
+		<< std::chrono::duration_cast<std::chrono::microseconds>(
+			std::chrono::steady_clock::now() - begin).count()
+		<< " mcsec" << std::endl;
 
-	std::cout << d << std::endl;
+	std::cout << "Result: " << d << std::endl;
+
+	auto begin1 = std::chrono::steady_clock::now();
+	auto q1 = longuint(~0ULL, longuint::__fill_fields_tag{});
+	for(size_t i = 0; i < 1000; i++)
+		q1 << i;
+	auto inter1 = std::chrono::steady_clock::now();
+	q1 = longuint(~0ULL, longuint::__fill_fields_tag{});
+	for(size_t i = 0; i < 1000; i++)
+	{
+		auto copy = q1;
+		copy.__experimental_shift_bits_left(i);
+	}
+	auto end1 = std::chrono::steady_clock::now();
+
+	std::cout << "Classic shift: "
+			  << std::chrono::duration_cast<std::chrono::microseconds>(inter1 - begin1).count()
+			  << "mcsec" << std::endl;
+	std::cout << "Experimental shift: "
+			  << std::chrono::duration_cast<std::chrono::microseconds>(end1 - inter1).count()
+			  << "mcsec" << std::endl;
 
 	std::cout << "Testing longuint with constexpr sqrt. Enter any integer value: " << std::endl;
 	std::cin >> a;
@@ -86,6 +109,6 @@ void longuint_test()
 
 int main(void)
 {
-	constexpr_pow_test();
+	//constexpr_pow_test();
 	longuint_test();
 }

@@ -16,7 +16,7 @@
 #ifndef __DIXELU_STRICT_CONSTEXPR
 #define __DIXELU_STRICT_CONSTEXPR constexpr
 #endif
-#else 
+#else
 #ifndef __DIXELU_STRICT_CONSTEXPR
 #define __DIXELU_STRICT_CONSTEXPR
 #endif
@@ -66,7 +66,7 @@ namespace dixelu
 #endif
 		template<typename __uint64__type_emulator>
 		static constexpr __uint64__type_emulator multiply64to128(
-			__uint64__type_emulator lhs, 
+			__uint64__type_emulator lhs,
 			__uint64__type_emulator rhs,
 			__uint64__type_emulator& high)
 		{
@@ -94,7 +94,7 @@ namespace dixelu
 			  * calculations.
 			  */
 
-			  /* First calculate all of the cross products. */
+			  /* First calculate all the cross products. */
 			__uint64__type_emulator lo_lo = (lhs & 0xFFFFFFFF) * (rhs & 0xFFFFFFFF);
 			__uint64__type_emulator hi_lo = (lhs >> 32) * (rhs & 0xFFFFFFFF);
 			__uint64__type_emulator lo_hi = (lhs & 0xFFFFFFFF) * (rhs >> 32);
@@ -124,7 +124,7 @@ namespace dixelu
 		static constexpr size_type down_type_bits = bits >> 1;
 		static constexpr size_type down_type_size = down_type_bits / base_bits;
 		static constexpr size_type size = bits / base_bits;
-		static constexpr bool is_contexpr_expenisve = true; // change to false after optimisations;
+		static constexpr bool is_constexpr_expensive = true; // change to false after optimisations;
 
 		struct __fill_fields_tag {};
 
@@ -210,11 +210,25 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type& self_inverse()
+		{
+			hi = ~hi;
+			lo = ~lo;
+			return *this;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type operator|(const self_type& rhs) const
 		{
 			long_uint res(*this);
 			res |= rhs;
 			return res;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator|(self_type&& rhs) const
+		{
+			return (rhs |= *this);
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -226,11 +240,23 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator&(self_type&& rhs) const
+		{
+			return (rhs &= *this);
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type operator^(const self_type& rhs) const
 		{
 			long_uint res(*this);
 			res ^= rhs;
 			return res;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator^(self_type&& rhs) const
+		{
+			return (rhs ^= *this);
 		}
 
 		template< bool cond, typename U >
@@ -358,9 +384,23 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator+(self_type&& rhs) const
+		{
+			return (rhs += *this);
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator-=(const self_type& rhs)
 		{
-			return ((*this) += ((~rhs) + self_type(1)));
+			constexpr const self_type one(1);
+			return ((*this) += ((~rhs) + one));
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type& operator-=(self_type&& rhs)
+		{
+			constexpr const self_type one(1);
+			return ((*this) += (rhs.self_inverse() + one));
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -369,6 +409,14 @@ namespace dixelu
 			self_type res(*this);
 			res -= rhs;
 			return res;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator-(self_type&& rhs) const
+		{
+			self_type copy = *this;
+			copy -= std::move(rhs);
+			return copy;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -383,14 +431,14 @@ namespace dixelu
 			return ((bool)lo | (bool)hi);
 		}
 
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS 
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& __experimental_shift_bits_left(size_type shift)
 		{
 			if (shift < base_bits)
 			{
 				const auto shifted_part_length = base_bits - shift;
 				const auto shift_cut_mask = (~0ULL << shifted_part_length);
-				
+
 				size_type mask_buffer = 0;
 				for (size_type i = 0; i < size; ++i)
 				{
@@ -475,6 +523,7 @@ namespace dixelu
 			}
 			return *this;
 		}
+
 		///* https://github.com/glitchub/arith64/blob/master/arith64.c *///
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator>>=(size_type rhs)
@@ -546,7 +595,7 @@ namespace dixelu
 			return (*this = (*this * rhs));
 		}
 
-		template<std::uint64_t __deg>
+		/*template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			static long_uint<__deg> __downtype_mul_long(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
 		{
@@ -565,7 +614,7 @@ namespace dixelu
 				carry <<= 1;
 			}
 			return result;
-		}
+		}*/
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 		static long_uint<0>
@@ -577,7 +626,7 @@ namespace dixelu
 			result.lo = details::multiply64to128(lhs, rhs, result.hi);
 			return result;
 		}
-		
+
 		template<std::uint64_t __deg>
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			static long_uint<__deg + 1>
@@ -623,62 +672,9 @@ namespace dixelu
 
 			res += hilo << long_uint<__deg>::down_type_bits;
 
-			//std::cout << lhs.to_hex_string(lhs) << " x " << rhs.to_hex_string(rhs) << " = " << res.to_hex_string(res) << std::endl;
-
 			return res;
 		}
-		/*
-		template<std::uint64_t __deg>
-		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
-			// todo: fix
-			static long_uint<__deg> __downtype_mul(const long_uint<__deg>& lhs, const long_uint<__deg>& rhs)
-		{
-			if (!lhs || !rhs)
-				return {};
 
-			using local_down_type = typename long_uint<__deg>::down_type;
-			constexpr size_type half_down_type_mask_bits = (long_uint<__deg>::down_type_bits >> 1);
-			const local_down_type himask = (local_down_type(1) << half_down_type_mask_bits - 1);
-
-			const local_down_type lhs_lo = long_uint<__deg>::template __downtype_get_lo<__deg>(lhs.lo);
-			const local_down_type rhs_lo = long_uint<__deg>::template __downtype_get_lo<__deg>(rhs.lo);
-			const local_down_type lhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(lhs.lo);
-			const local_down_type rhs_hi = long_uint<__deg>::template __downtype_get_hi<__deg>(rhs.lo);
-
-			const local_down_type hihi = __downtype_mul_call(lhs_hi, rhs_hi);
-			const local_down_type lolo = __downtype_mul_call(lhs_lo, rhs_lo);
-
-			const bool rhs_diff_is_negative = rhs_hi > rhs_lo;
-			const local_down_type rhs_diff = rhs_diff_is_negative ? rhs_hi - rhs_lo : rhs_lo - rhs_hi;
-			const bool lhs_diff_is_negative = lhs_lo > lhs_hi;
-			const local_down_type lhs_diff = lhs_diff_is_negative ? lhs_lo - lhs_hi : lhs_hi - lhs_lo;
-
-			const bool hihilolo_is_negative = rhs_diff_is_negative ^ lhs_diff_is_negative;
-			const local_down_type hihilolo = __downtype_mul_call(rhs_diff, lhs_diff);
-
-			auto hilo = 
-				(long_uint<__deg>)hihi + 
-				(long_uint<__deg>)lolo;
-
-			if (hihilolo_is_negative)
-				hilo -= (long_uint<__deg>)hihilolo;
-			else
-				hilo += (long_uint<__deg>)hihilolo;
-			
-			auto res_hi = (hilo >> half_down_type_mask_bits) << (2 * half_down_type_mask_bits);
-			auto res_lo = (hilo << (3 * half_down_type_mask_bits)) >> (3 * half_down_type_mask_bits);
-			
-			long_uint<__deg> res;
-
-			res.hi = hihi;
-			res.lo = lolo;
-			
-			res += res_hi;
-			res += res_lo;
-			
-			return res;
-		}
-		*/
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			bool operator<(const self_type& rhs) const
 		{
@@ -1004,7 +1000,7 @@ namespace std
 		static constexpr base lowest() noexcept { return base(); }
 
 		static constexpr int  digits = base::bits;
-		static constexpr int  digits10 = base::bits / 3.32192809488736234787031942948939017586483139302458061205475639581593477660862521585013974335937015509966;
+		static constexpr int  digits10 = base::bits / 3.32192809488736234787;
 		static constexpr bool is_signed = false;
 		static constexpr bool is_integer = true;
 		static constexpr bool is_exact = true;

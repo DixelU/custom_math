@@ -48,7 +48,7 @@ namespace dixelu
 
 		namespace details
 		{
-			static constexpr size_t expected_maximum_of_complex_constexpr_operations = 8192;
+			static constexpr std::size_t expected_maximum_of_complex_constexpr_operations = 8192;
 
 			template<typename T, bool is_int>
 			struct __try_unsigned {};
