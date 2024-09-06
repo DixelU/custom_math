@@ -235,7 +235,7 @@ namespace dixelu
 				unsigned int guessed_end = __lookup_table_consts<T, n>::max_degree - 1;
 				do
 				{
-					auto center = guessed_begin + (guessed_end - guessed_begin) >> 1;
+					auto center = (guessed_end + guessed_begin) >> 1;
 					if (table.lookup_table_vals[center] < x)
 						guessed_begin = center;
 					else
