@@ -157,10 +157,8 @@ namespace dixelu
 					uT yabs(y);
 					return (xlz == ylz) ? T(xabs * yabs) : -T(xabs * yabs);
 				}
-				else
-				{
-					return x * y;
-				}
+
+				return x * y;
 			}
 
 			template<typename T>
@@ -172,10 +170,8 @@ namespace dixelu
 					auto xabs = uT(constexpr_abs<T>(x));
 					return T(xabs * xabs);
 				}
-				else
-				{
-					return x * x;
-				}
+
+				return x * x;
 			}
 
 			template<typename T>
@@ -446,7 +442,7 @@ namespace dixelu
 				inverse = true;
 			}
 
-			auto v = utils::details::__uintpow(a, b);
+			auto v = details::__uintpow(a, b);
 			return T(sign) * ((inverse) ? T(1) / v : v);
 		}
 	} // namespace utils
