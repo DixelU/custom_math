@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cinttypes>
 #include <string>
+#include <cstdio>
 
 #include <stdint.h>
 #ifdef _MSC_VER
@@ -381,15 +382,18 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator-=(const self_type& rhs)
 		{
-			constexpr const self_type one(1);
-			return ((*this) += ((~rhs) + one));
+			const auto lo_prev = lo;
+			lo -= rhs.lo;
+			if (lo > lo_prev) // borrow
+				hi -= down_type(1);
+			hi -= rhs.hi;
+			return *this;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type& operator-=(self_type&& rhs)
 		{
-			constexpr const self_type one(1);
-			return ((*this) += (rhs.self_inverse() + one));
+			return (*this -= static_cast<const self_type&>(rhs));
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -409,6 +413,40 @@ namespace dixelu
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type& operator++()
+		{
+			++lo;
+			if (lo == down_type(0))
+				++hi;
+			return *this;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator++(int)
+		{
+			self_type tmp(*this);
+			++(*this);
+			return tmp;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type& operator--()
+		{
+			if (lo == down_type(0))
+				--hi;
+			--lo;
+			return *this;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			self_type operator--(int)
+		{
+			self_type tmp(*this);
+			--(*this);
+			return tmp;
+		}
+
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			explicit operator size_type() const
 		{
 			return operator[](0);
@@ -417,7 +455,7 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			explicit operator bool() const
 		{
-			return ((bool)lo | (bool)hi);
+			return ((bool)lo || (bool)hi);
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -770,18 +808,20 @@ namespace dixelu
 			size_type iter_count = b.__leading_zeros() - a.__leading_zeros() + 1;
 			self_type rem = a >> iter_count;
 			a <<= bits - iter_count;
-			self_type wrap = 0;
 			while (iter_count-- > 0)
 			{
-				rem = ((rem << 1) | (a >> (bits - 1)));
-				a = ((a << 1) | (wrap & one));
-				wrap = (b > rem) ? self_type() : (~self_type()); // warning! hot spot?
-				rem -= (b & wrap);
+				rem = (rem << 1) | (a >> (bits - 1));
+				a <<= 1;
+				if (rem >= b)
+				{
+					rem -= b;
+					a |= one;
+				}
 			}
 
 			if (assign_rem)
 				rem_out = rem;
-			return (a << 1) | (wrap & one);
+			return a;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -875,11 +915,13 @@ namespace dixelu
 		inline static resolved_return_type<(__deg == 0), std::string>
 			to_hex_string(const long_uint<__deg>& value, const bool leading_zeros_flag = false)
 		{
-			std::stringstream ss;
+			char buf[33];
+			int len;
 			if (leading_zeros_flag || value.hi)
-				ss << std::setfill('0') << std::setw(16) << std::hex << value.hi;
-			ss << std::setfill('0') << std::setw(16) << std::hex << value.lo;
-			auto result = ss.str();
+				len = std::snprintf(buf, sizeof(buf), "%016" PRIx64 "%016" PRIx64, value.hi, value.lo);
+			else
+				len = std::snprintf(buf, sizeof(buf), "%016" PRIx64, value.lo);
+			std::string result(buf, len);
 
 			if (!leading_zeros_flag && result.size() > 1 && result.front() == '0')
 			{
@@ -914,16 +956,31 @@ namespace dixelu
 		inline static self_type __from_decimal_char_string(const char* str, size_type str_size)
 		{
 			self_type value;
-			self_type radix = 10;
+			constexpr size_type chunk_size = 19;
+			constexpr base_type chunk_radix = 10000000000000000000ULL; // 10^19
 
-			while (str_size)
+			while (str_size >= chunk_size)
 			{
-				auto ull_value = *str - '0';
-				value *= radix;
-				value += self_type(ull_value);
+				base_type chunk = 0;
+				for (size_type i = 0; i < chunk_size; ++i)
+					chunk = chunk * 10 + static_cast<base_type>(str[i] - '0');
+				value *= self_type(chunk_radix);
+				value += self_type(chunk);
+				str += chunk_size;
+				str_size -= chunk_size;
+			}
 
-				++str;
-				--str_size;
+			if (str_size)
+			{
+				base_type chunk = 0;
+				base_type radix = 1;
+				for (size_type i = 0; i < str_size; ++i)
+				{
+					chunk = chunk * 10 + static_cast<base_type>(str[i] - '0');
+					radix *= 10;
+				}
+				value *= self_type(radix);
+				value += self_type(chunk);
 			}
 
 			return value;
