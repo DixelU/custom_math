@@ -613,7 +613,36 @@ namespace dixelu
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type operator*(const self_type& rhs) const
 		{
-			return __direct_karatsuba_mul<deg>(*this, rhs).lo;
+			// Schoolbook (comba) multiply, truncated to the low `size` limbs.
+			// For these small limb counts (<= a few dozen) this beats the
+			// recursive Karatsuba path, which pays for temporaries/conversions
+			// that dwarf the actual multiply. Karatsuba helpers are kept below
+			// for reference but are no longer on the hot path.
+			self_type res;
+			for (size_type i = 0; i < size; ++i)
+			{
+				const base_type ai = (*this)[i];
+				if (!ai)
+					continue;
+				base_type carry = 0;
+				for (size_type j = 0; i + j < size; ++j)
+				{
+					base_type prod_hi = 0;
+					const base_type prod_lo = details::multiply64to128(ai, rhs[j], prod_hi);
+
+					// res[i + j] += prod_lo + carry, capturing the carry-out.
+					// The full sum ai*rhs[j] + res[i+j] + carry always fits in
+					// 128 bits, so prod_hi + c1 + c2 cannot overflow base_type.
+					const base_type t = prod_lo + carry;
+					const base_type c1 = (t < prod_lo);
+					base_type& dst = res[i + j];
+					const base_type r = t + dst;
+					const base_type c2 = (r < t);
+					dst = r;
+					carry = prod_hi + c1 + c2;
+				}
+			}
+			return res;
 		}
 
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
@@ -824,6 +853,32 @@ namespace dixelu
 			return a;
 		}
 
+		// Divide by a single base-limb divisor. O(size) limb steps using a
+		// 128/64 division per limb, instead of the O(bits) bit-serial loop in
+		// __divmod -- which is the dominant cost of base-10 conversion, where
+		// the divisor (10^19) is always a single limb.
+		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+			static self_type __divmod_small(self_type lhs, base_type d, base_type& rem)
+		{
+#if defined(__SIZEOF_INT128__) && !defined(__wasm__)
+			self_type q;
+			base_type r = 0;
+			for (std::ptrdiff_t i = (std::ptrdiff_t)size - 1; i >= 0; --i)
+			{
+				const __uint128_t cur = ((__uint128_t)r << base_bits) | lhs[i];
+				q[i] = (base_type)(cur / d);
+				r = (base_type)(cur % d);
+			}
+			rem = r;
+			return q;
+#else
+			self_type r;
+			self_type q = __divmod(lhs, self_type(d), r);
+			rem = r[0];
+			return q;
+#endif
+		}
+
 		__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
 			self_type operator/(const self_type& rhs) const
 		{
@@ -859,34 +914,33 @@ namespace dixelu
 			return (self_type() - res);
 		}
 
-		// dumb
 		inline static std::string to_string(self_type value)
 		{
-			constexpr size_type radix_size = 19;
-			std::string res_array[bits / (radix_size * 3 /*log2 of 10 ~=~ 3*/) + 1]; // SSO?
-			std::string res;
-			const self_type conversion_radix(10000000000000000000ull); // max
-			//self_type conversion_radix(10000000000ull); // sso optimal
-			const self_type zero;
-			self_type rem;
-			size_type idx = 0;
-			while (value != zero)
-			{
-				value = __divmod(value, conversion_radix, rem);
-				res_array[idx] = std::to_string(rem[0]);
-				idx++;
-			}
-			if (!idx)
+			if (!(bool)value)
 				return "0";
-			bool first_run = true;
-			while (idx-- > 0)
+
+			constexpr size_type radix_digits = 19;
+			constexpr base_type radix = 10000000000000000000ull; // 10^19, one limb
+
+			// Upper bound on decimal digits: bits / log2(10) < bits / 3.
+			char buf[bits / 3 + 2];
+			size_type pos = sizeof(buf); // fill from the end
+
+			base_type rem = 0;
+			while ((bool)value)
 			{
-				res += ((!first_run && res_array[idx].size() < radix_size) ?
-					(std::string(radix_size - res_array[idx].size(), '0')) : "") +
-					res_array[idx];
-				first_run = false;
+				value = __divmod_small(value, radix, rem);
+				const bool last_chunk = !(bool)value;
+				for (size_type k = 0; k < radix_digits; ++k)
+				{
+					buf[--pos] = static_cast<char>('0' + (rem % 10));
+					rem /= 10;
+					if (last_chunk && !rem) // trim leading zeros only on the top chunk
+						break;
+				}
 			}
-			return res;
+
+			return std::string(buf + pos, buf + sizeof(buf));
 		}
 
 		template<std::uint64_t __deg, bool frontal_0x = true>
