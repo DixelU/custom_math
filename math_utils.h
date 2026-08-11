@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <limits>
+#include <utility>
 
 #if (defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L))
 #ifndef __DIXELU_RELAXED_CONSTEXPR
@@ -186,6 +187,37 @@ namespace dixelu
 				return (n < 0) ? T(1) / __uintpow(x, -n) : __uintpow(x, n);
 			}
 
+			// Detects bignum-like types that expose ::bits and __leading_zeros()
+			// (e.g. long_uint). SFINAE-based, so plain arithmetic T -> false.
+			template<typename T, typename = void>
+			struct has_bitlength : std::false_type {};
+
+			template<typename T>
+			struct has_bitlength<T, decltype(
+					(void)T::bits,
+					(void)std::declval<const T&>().__leading_zeros(),
+					void())> : std::true_type {};
+
+			// Initial guess for the n-th root: 2^ceil(bitlen(x)/n), within a
+			// factor of 2 of x^(1/n). This lets Newton converge quadratically in
+			// a handful of steps instead of halving from x over O(bits) steps.
+			template<typename T, unsigned int n>
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+				T __root_seed(const T& x, std::true_type /*has_bitlength*/)
+			{
+				const auto bitlen = T::bits - x.__leading_zeros();
+				const auto shift = (bitlen + n - 1) / n; // ceil(bitlen / n)
+				return T(1) << shift;
+			}
+
+			// No bit-length info available: keep the previous seed (x itself).
+			template<typename T, unsigned int n>
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS
+				T __root_seed(const T& x, std::false_type)
+			{
+				return x;
+			}
+
 			template<typename T, unsigned int n>
 			struct __lookup_table_consts
 			{
@@ -250,11 +282,13 @@ namespace dixelu
 					), T>::type
 				root_approx(T x)
 			{
-				return x;
+				return __root_seed<T, n>(x, has_bitlength<T>{});
 			}
 
+			// Floating-point path: Newton's iteration with epsilon-based
+			// termination (real-valued root). Unchanged behaviour.
 			template<typename T, std::size_t n>
-			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintroot(T x)
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintroot(T x, std::false_type /*integral*/)
 			{
 				__DIXELU_RELAXED_CONSTEXPR T	__epsilon = std::numeric_limits<T>::epsilon();
 				__DIXELU_RELAXED_CONSTEXPR bool has_epsilon = (__epsilon != T());
@@ -284,6 +318,43 @@ namespace dixelu
 					(!has_epsilon && (diff > __epsilon && diff_step > __epsilon))
 				);
 				return x_k;
+			}
+
+			// Integer path: exact floor(x^(1/n)). Seeded from above (>= root)
+			// and iterated monotonically downward; the first non-decrease means
+			// x_k has reached the floor. This both fixes the previous off-by-one
+			// (the epsilon loop above could settle on floor+1) and is fast: a
+			// good seed converges quadratically instead of halving from x.
+			template<typename T, std::size_t n>
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintroot(T x, std::true_type /*integral*/)
+			{
+				if (x == T(0))
+					return T(0);
+				if (n <= 1)
+					return x;
+
+				const T n_conv(n);
+				const T one(1);
+				T x_k(root_approx<T, n>(x));
+				if (x_k == T(0))
+					x_k = x; // never seed with zero
+
+				while (true)
+				{
+					const T x_k_pow = __uintpow(x_k, n - 1); // >= 1, since x_k >= 1
+					const T x_next = ((n_conv - one) * x_k + x / x_k_pow) / n_conv;
+					if (!(x_next < x_k))
+						break; // stopped decreasing: x_k is the exact floor root
+					x_k = x_next;
+				}
+				return x_k;
+			}
+
+			template<typename T, std::size_t n>
+			__DIXELU_CONDITIONAL_CPP14_SPECIFIERS T __uintroot(T x)
+			{
+				return __uintroot<T, n>(x,
+					std::integral_constant<bool, std::numeric_limits<T>::is_integer>{});
 			}
 
 			template<typename T>
